@@ -217,10 +217,12 @@ body.genre-sf .genre-tete h2 { color: #9fe3ff; }
 .sur-image .recherche { background: rgba(20,22,32,.72); border-color: rgba(255,255,255,.2); color: #f3f1ea; backdrop-filter: blur(6px); }
 .sur-image .recherche::placeholder { color: rgba(243,241,234,.6); }
 .sur-image .vide { background: rgba(20,22,32,.72); border-color: rgba(255,255,255,.25); color: rgba(243,241,234,.85); }
-.sur-image .credits, .sur-image .journal { background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(8px); }
+.sur-image .credits, .sur-image .journal { background: color-mix(in srgb, var(--surface) 58%, transparent); -webkit-backdrop-filter: blur(10px) saturate(1.2); backdrop-filter: blur(10px) saturate(1.2); border-color: rgba(255,255,255,.14); }
 .sur-image details.repli > summary { color: #f3f1ea; text-shadow: 0 1px 8px rgba(0,0,0,.6); }
 .sur-image > .section > div > .btn-sec, .sur-image > div > .btn-sec { background: rgba(20,22,32,.72); border-color: rgba(255,255,255,.2); color: #f3f1ea; }
-.sur-image .livre { background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); }
+.sur-image .livre { background: color-mix(in srgb, var(--surface) 58%, transparent); -webkit-backdrop-filter: blur(10px) saturate(1.2); backdrop-filter: blur(10px) saturate(1.2); border-color: rgba(255,255,255,.14); }
+.sur-image .journal-ligne { border-color: rgba(255,255,255,.12); }
+.pastille.support { border: 1px solid currentColor; color: var(--muted); background: transparent; }
 
 /* ---------- Barre d'onglets ---------- */
 .barre {

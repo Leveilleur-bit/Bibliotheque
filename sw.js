@@ -4,7 +4,7 @@
    Fichiers de l'appli : cache d'abord, rafraîchis en arrière-plan.
    Incrémente CACHE_VERSION à chaque changement des fichiers.
    ============================================================ */
-const CACHE_VERSION = "v4";
+const CACHE_VERSION = "v5";
 const CACHE_NAME = "ma-bibliotheque-" + CACHE_VERSION;
 const FICHIERS = [
   "./", "./index.html", "./manifest.json", "./css/style.css",
@@ -12,7 +12,9 @@ const FICHIERS = [
 ];
 
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FICHIERS)));
+  // cache: "reload" : on contourne le cache HTTP du navigateur pour ne jamais
+  // mélanger des fichiers de deux versions différentes
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FICHIERS.map(f => new Request(f, { cache: "reload" })))));
   self.skipWaiting();
 });
 

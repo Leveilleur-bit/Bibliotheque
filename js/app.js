@@ -118,6 +118,10 @@ function carteLivre(l) {
   const meta = [l.auteur, l.narrateur ? "lu par " + l.narrateur : "", l.conseillePar ? "conseillé par " + l.conseillePar : ""].filter(Boolean).map(esc).join(" · ");
 
   const pastilles = [];
+  if (ui.vue === "fantasy" || ui.vue === "sf") {
+    const sup = { audible: "Audio", papier: "Papier", envie: "Envie" }[l.support];
+    if (sup && l.statut !== "propose") pastilles.push(`<span class="pastille support">${sup}</span>`);
+  }
   if (l.statut === "propose" && l.axe) pastilles.push(`<span class="pastille accent">${l.rang ? "n°" + l.rang + " · " : ""}${esc(l.axe)}</span>`);
   if (l.support === "audible" && l.statut !== "propose" && l.statut !== "refuse") {
     pastilles.push(l.verifieFR
