@@ -276,3 +276,7 @@ body[data-fond="autre"] .genre-tete h2 { color: #f2c98a; }
 }
 .sur-image .pastille.neutre, .sur-image .pastille.support { background: rgba(0, 0, 0, .25); }
 .sur-image .filtres button[aria-pressed="true"], .sur-image .btn { text-shadow: none; }
+
+/* Étoiles toujours visibles sur les livres terminés */
+.etoiles button { font-size: 1.45rem; padding: 2px 3px; color: rgba(255, 255, 255, .28); text-shadow: none; }
+.etoiles button.on { color: var(--accent); text-shadow: 0 0 8px rgba(217, 181, 106, .45); }

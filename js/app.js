@@ -159,7 +159,7 @@ function carteLivre(l) {
       ${l.tomesSource ? `<p class="doux petit" style="margin:0">${esc(l.tomesSource)}</p>` : ""}
     </div>`;
 
-  const etoiles = (l.statut === "ecoute" || l.statut === "lu") && (ouvert || l.note) ? `
+  const etoiles = (l.statut === "ecoute" || l.statut === "lu") ? `
     <div class="etoiles" aria-label="Ma note">
       ${[1, 2, 3, 4, 5].map(n => `<button data-act="note" data-n="${n}" data-id="${esc(l.id)}" class="${(l.note || 0) >= n ? "on" : ""}" aria-label="${n} sur 5">★</button>`).join("")}
       ${l.dateFin ? `<span class="doux petit">&nbsp;fini le ${esc(dateCourte(l.dateFin))}</span>` : ""}
