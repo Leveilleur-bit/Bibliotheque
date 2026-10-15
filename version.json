@@ -1,9 +1,9 @@
 {
-  "version": "9",
+  "version": "10",
   "date": "2026-10-15",
   "nouveautes": [
+    "Le compteur de livres écoutés et lus compte chaque tome",
     "Cartes entièrement transparentes avec un simple filet",
-    "Encore plus de transparence",
-    "Nouvelles icônes : une épée pour Fantasy, une planète pour SF"
+    "Encore plus de transparence"
   ]
 }

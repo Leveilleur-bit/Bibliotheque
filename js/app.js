@@ -99,6 +99,15 @@ const FILTRES_GENRE = [
   ["idees", "Idées"]
 ];
 // Range un livre dans un des filtres des onglets Fantasy / SF
+// Nombre de livres réellement écoutés ou lus : chaque tome coché compte.
+// Un livre sans liste de tomes compte pour 1 s'il est terminé.
+function livresFinis(l) {
+  const tomes = Array.isArray(l.tomes) ? l.tomes : [];
+  if (tomes.length) return tomes.filter(t => t.ecoute).length;
+  return l.statut === "ecoute" || l.statut === "lu" ? 1 : 0;
+}
+const totalFinis = liste => liste.reduce((n, l) => n + livresFinis(l), 0);
+
 function categorieGenre(l) {
   if (l.statut === "propose") return "idees";
   if (l.statut === "refuse" || l.statut === "archive") return null;
@@ -240,7 +249,7 @@ function vueAudible() {
         <div class="stats">
           <span><b>${achetes.length}</b> <span class="doux">dépensés</span></span>
           <span><b>${achetes.filter(l => l.gaspille && !l.rembourse).length}</b> <span class="doux">gaspillés</span></span>
-          <span><b>${compter("ecoute")}</b> <span class="doux">écoutés</span></span>
+          <span><b>${totalFinis(audible.filter(l => l.statut === "ecoute" || l.statut === "en_cours"))}</b> <span class="doux">livres écoutés</span></span>
         </div>
       </div>
     </section>
@@ -301,10 +310,12 @@ function vueGenre(genre) {
   const compter = f => f === "tout" ? livres.length : livres.filter(l => categorieGenre(l) === f).length;
   const affiches = livresGenre(genre);
   const n = f => compter(f);
+  const ecoutes = totalFinis(livres.filter(l => l.support === "audible" && (l.statut === "ecoute" || l.statut === "en_cours")));
+  const lus = totalFinis(livres.filter(l => l.support === "papier" && l.statut === "lu"));
   return `
     <section class="genre-tete">
       <h2>${GENRES[genre]}</h2>
-      <p>${pluriel(n("audio"), "écoute")} · ${n("papier")} lu${n("papier") > 1 ? "s" : ""} en papier · ${n("avenir")} à venir · ${pluriel(n("idees"), "idée")}</p>
+      <p>${ecoutes} livre${ecoutes > 1 ? "s" : ""} écouté${ecoutes > 1 ? "s" : ""} · ${lus} lu${lus > 1 ? "s" : ""} en papier · ${n("avenir")} à venir · ${pluriel(n("idees"), "idée")}</p>
     </section>
     <section class="section">
       ${filtresHTML(FILTRES_GENRE, ui.filtreGenre, "filtre-genre", compter)}
