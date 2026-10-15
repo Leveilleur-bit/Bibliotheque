@@ -1,9 +1,9 @@
 {
-  "version": "20",
+  "version": "21",
   "date": "2026-10-15",
   "nouveautes": [
+    "Les filtres Écouté et Lu comptent les livres, comme les compteurs du haut",
     "Essai : la salle aux crânes en fond des Envies",
-    "Nouveau fond pour les Idées : la grande bibliothèque à la coupole étoilée",
-    "Nouveau fond pour les Réglages : l'ours à la lanterne"
+    "Nouveau fond pour les Idées : la grande bibliothèque à la coupole étoilée"
   ]
 }

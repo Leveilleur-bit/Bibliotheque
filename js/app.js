@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "20";   // doit correspondre à version.json
+const VERSION_APPLI = "21";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -262,7 +262,8 @@ function filtresHTML(liste, actif, nomAct, compter) {
 function vueAudible() {
   const audible = etat.livres.filter(l => l.support === "audible");
   const achetes = audible.filter(l => l.achat === "credit");
-  const compter = s => audible.filter(l => l.statut === s).length;
+  const livresEcoutes = totalFinis(audible.filter(l => l.statut === "ecoute" || l.statut === "en_cours"));
+  const compter = s => s === "ecoute" ? livresEcoutes : audible.filter(l => l.statut === s).length;
   const affiches = audible.filter(l => l.statut === ui.filtreAudible).sort(ui.filtreAudible === "ecoute" ? parTitre : parMaj);
   const vides = {
     a_ecouter: "Rien en attente. Ajoute un titre une fois sa fiche audible.fr vérifiée en français, ou valide une proposition.",
@@ -282,12 +283,13 @@ function vueAudible() {
         <div class="stats">
           <span><b>${achetes.length}</b> <span class="doux">dépensés</span></span>
           <span><b>${achetes.filter(l => l.gaspille && !l.rembourse).length}</b> <span class="doux">gaspillés</span></span>
-          <span><b>${totalFinis(audible.filter(l => l.statut === "ecoute" || l.statut === "en_cours"))}</b> <span class="doux">livres écoutés</span></span>
+          <span><b>${livresEcoutes}</b> <span class="doux">livres écoutés</span></span>
         </div>
       </div>
     </section>
     <section class="section">
       ${filtresHTML(FILTRES_AUDIBLE, ui.filtreAudible, "filtre-audible", compter)}
+      ${ui.filtreAudible === "ecoute" && affiches.length ? `<p class="doux petit compte-cartes">${livresEcoutes} livres répartis en ${pluriel(affiches.length, "série ou titre").replace("série ou titres", "séries ou titres")}</p>` : ""}
       ${listeHTML(affiches, vides[ui.filtreAudible])}
       <div><button class="btn-sec" data-act="ajouter" data-type="audible">+ Ajouter un livre audio</button></div>
     </section>
@@ -418,11 +420,13 @@ const messageVideGenre = total => ui.recherche ? "Aucun livre ne correspond à t
 
 function vueGenre(genre) {
   const livres = etat.livres.filter(l => genreDe(l) === genre && categorieGenre(l));
-  const compter = f => f === "tout" ? livres.length : livres.filter(l => categorieGenre(l) === f).length;
-  const affiches = livresGenre(genre);
-  const n = f => compter(f);
   const ecoutes = totalFinis(livres.filter(l => l.support === "audible" && (l.statut === "ecoute" || l.statut === "en_cours")));
   const lus = totalFinis(livres.filter(l => l.support === "papier" && l.statut === "lu"));
+  const avenir = livres.filter(l => categorieGenre(l) === "avenir").length;
+  // les filtres comptent des livres (tomes compris), comme l'en-tête
+  const compter = f => ({ tout: ecoutes + lus + avenir, audio: ecoutes, papier: lus, avenir })[f] || 0;
+  const affiches = livresGenre(genre);
+  const n = f => compter(f);
   return `
     <section class="genre-tete">
       <h2>${GENRES[genre]}</h2>

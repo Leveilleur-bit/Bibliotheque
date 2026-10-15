@@ -314,3 +314,4 @@ body[data-fond="autre"] .genre-tete h2 { color: #f2c98a; }
 .accueil-nb { font-family: var(--display); font-weight: 700; font-size: 1.7rem; line-height: 1.1; color: var(--accent); text-align: center; font-variant-numeric: tabular-nums; }
 .accueil-idee { font-size: 1.1rem; }
 .barre svg { width: 22px; height: 22px; }
+.compte-cartes { margin: -2px 0 0; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
