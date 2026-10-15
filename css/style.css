@@ -202,10 +202,11 @@ code { font-size: .9em; background: var(--surface-2); padding: 1px 5px; border-r
   position: fixed; inset: 0; z-index: -1; display: none;
   background-size: cover; background-position: center;
 }
-body.genre-fantasy .fond, body.genre-sf .fond { display: block; }
+body.genre-fantasy .fond, body.genre-sf .fond, body.genre-audible .fond { display: block; }
+body.genre-audible .fond { background-image: linear-gradient(180deg, rgba(6,9,14,.5) 0%, rgba(6,9,14,.3) 35%, rgba(6,9,14,.85) 80%), url("../img/audible.jpg"); background-position: center top; }
 body.genre-fantasy .fond { background-image: linear-gradient(180deg, rgba(8,8,12,.55) 0%, rgba(8,8,12,.35) 30%, rgba(8,8,12,.82) 75%), url("../img/fantasy.jpg"); }
 body.genre-sf .fond { background-image: linear-gradient(180deg, rgba(4,8,18,.55) 0%, rgba(4,8,18,.35) 30%, rgba(4,8,18,.82) 75%), url("../img/sf.jpg"); }
-body.genre-fantasy, body.genre-sf { background: #0b0c12; }
+body.genre-fantasy, body.genre-sf, body.genre-audible { background: #0b0c12; }
 .genre-tete { color: #f3f1ea; display: grid; gap: 6px; padding-block: 28px 8px; text-shadow: 0 2px 12px rgba(0,0,0,.6); }
 .genre-tete h2 { font-weight: 800; font-size: 2.2rem; letter-spacing: -.01em; }
 .genre-tete p { margin: 0; color: rgba(243,241,234,.85); font-variant-numeric: tabular-nums; }
@@ -216,6 +217,9 @@ body.genre-sf .genre-tete h2 { color: #9fe3ff; }
 .sur-image .recherche { background: rgba(20,22,32,.72); border-color: rgba(255,255,255,.2); color: #f3f1ea; backdrop-filter: blur(6px); }
 .sur-image .recherche::placeholder { color: rgba(243,241,234,.6); }
 .sur-image .vide { background: rgba(20,22,32,.72); border-color: rgba(255,255,255,.25); color: rgba(243,241,234,.85); }
+.sur-image .credits, .sur-image .journal { background: color-mix(in srgb, var(--surface) 90%, transparent); backdrop-filter: blur(8px); }
+.sur-image details.repli > summary { color: #f3f1ea; text-shadow: 0 1px 8px rgba(0,0,0,.6); }
+.sur-image > .section > div > .btn-sec, .sur-image > div > .btn-sec { background: rgba(20,22,32,.72); border-color: rgba(255,255,255,.2); color: #f3f1ea; }
 .sur-image .livre { background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); }
 
 /* ---------- Barre d'onglets ---------- */

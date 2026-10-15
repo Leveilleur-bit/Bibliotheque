@@ -340,7 +340,8 @@ function rendre() {
   const genre = ui.vue === "fantasy" || ui.vue === "sf" ? ui.vue : null;
   document.body.classList.toggle("genre-fantasy", genre === "fantasy");
   document.body.classList.toggle("genre-sf", genre === "sf");
-  vue.classList.toggle("sur-image", !!genre);
+  document.body.classList.toggle("genre-audible", ui.vue === "audible");
+  vue.classList.toggle("sur-image", !!genre || ui.vue === "audible");
   $("#titre-vue").textContent = ui.vue === "audible" ? "Ma Bibliothèque" : TITRES_VUES[ui.vue];
   document.querySelectorAll(".barre button").forEach(b => b.setAttribute("aria-current", b.dataset.vue === ui.vue ? "page" : "false"));
   $("#btn-reglages").setAttribute("aria-pressed", String(ui.vue === "reglages"));

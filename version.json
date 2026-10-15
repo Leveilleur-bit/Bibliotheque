@@ -1,9 +1,9 @@
 {
-  "version": "3",
+  "version": "4",
   "date": "2026-10-15",
   "nouveautes": [
+    "Fond de bibliothèque gothique sur l'onglet Audible",
     "Plus d'onglet Papier : tes livres papier sont rangés dans Fantasy et SF (filtre « Lu (papier) »)",
-    "Recherche et ajout de livres directement dans Fantasy et SF",
-    "Barre d'onglets : Audible · Fantasy · SF · Envies · Idées"
+    "Recherche et ajout de livres directement dans Fantasy et SF"
   ]
 }
