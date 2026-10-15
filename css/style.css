@@ -202,16 +202,18 @@ code { font-size: .9em; background: var(--surface-2); padding: 1px 5px; border-r
   position: fixed; inset: 0; z-index: -1; display: none;
   background-size: cover; background-position: center;
 }
-body.genre-fantasy .fond, body.genre-sf .fond, body.genre-audible .fond { display: block; }
+body.genre-fantasy .fond, body.genre-sf .fond, body.genre-audible .fond, body.genre-autre .fond { display: block; }
+body.genre-autre .fond { background-image: linear-gradient(180deg, rgba(10,8,6,.5) 0%, rgba(10,8,6,.3) 35%, rgba(10,8,6,.85) 78%), url("../img/autres.jpg"); background-position: center top; }
 body.genre-audible .fond { background-image: linear-gradient(180deg, rgba(6,9,14,.5) 0%, rgba(6,9,14,.3) 35%, rgba(6,9,14,.85) 80%), url("../img/audible.jpg"); background-position: center top; }
 body.genre-fantasy .fond { background-image: linear-gradient(180deg, rgba(8,8,12,.55) 0%, rgba(8,8,12,.35) 30%, rgba(8,8,12,.82) 75%), url("../img/fantasy.jpg"); }
 body.genre-sf .fond { background-image: linear-gradient(180deg, rgba(4,8,18,.55) 0%, rgba(4,8,18,.35) 30%, rgba(4,8,18,.82) 75%), url("../img/sf.jpg"); }
-body.genre-fantasy, body.genre-sf, body.genre-audible { background: #0b0c12; }
+body.genre-fantasy, body.genre-sf, body.genre-audible, body.genre-autre { background: #0b0c12; }
 .genre-tete { color: #f3f1ea; display: grid; gap: 6px; padding-block: 28px 8px; text-shadow: 0 2px 12px rgba(0,0,0,.6); }
 .genre-tete h2 { font-weight: 800; font-size: 2.2rem; letter-spacing: -.01em; }
 .genre-tete p { margin: 0; color: rgba(243,241,234,.85); font-variant-numeric: tabular-nums; }
 body.genre-fantasy .genre-tete h2 { color: #f0d9a8; }
 body.genre-sf .genre-tete h2 { color: #9fe3ff; }
+body.genre-autre .genre-tete h2 { color: #f2c98a; }
 .sur-image .filtres button { background: rgba(20,22,32,.72); border-color: rgba(255,255,255,.18); color: rgba(243,241,234,.8); backdrop-filter: blur(6px); }
 .sur-image .filtres button[aria-pressed="true"] { background: rgba(243,241,234,.92); border-color: transparent; color: #12141c; }
 .sur-image .recherche { background: rgba(20,22,32,.72); border-color: rgba(255,255,255,.2); color: #f3f1ea; backdrop-filter: blur(6px); }
@@ -228,14 +230,14 @@ body.genre-sf .genre-tete h2 { color: #9fe3ff; }
 .barre {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
   background: var(--surface); border-top: 1px solid var(--line);
-  display: grid; grid-template-columns: repeat(5, 1fr);
+  display: grid; grid-template-columns: repeat(6, 1fr);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px);
 }
 .barre button {
   border: 0; background: none; cursor: pointer; height: var(--barre-h);
   display: grid; justify-items: center; align-content: center; gap: 2px;
-  color: var(--muted); font-size: .72rem; font-weight: 700; padding: 0 2px; min-width: 0;
+  color: var(--muted); font-size: .68rem; font-weight: 700; padding: 0 2px; min-width: 0;
 }
 .barre span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .barre svg { width: 24px; height: 24px; }

@@ -1,9 +1,9 @@
 {
-  "version": "5",
+  "version": "6",
   "date": "2026-10-15",
   "nouveautes": [
+    "Onglet Autres pour les lectures hors fantasy et SF, avec son propre fond",
     "Cartes transparentes pour voir le fond",
-    "Étiquette Audio / Papier dans Fantasy et SF",
-    "Mise à jour plus fiable de l'appli"
+    "Étiquette Audio / Papier dans Fantasy et SF"
   ]
 }
