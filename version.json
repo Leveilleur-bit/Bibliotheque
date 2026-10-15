@@ -1,9 +1,9 @@
 {
-  "version": "14",
+  "version": "15",
   "date": "2026-10-15",
   "nouveautes": [
+    "Mise à jour automatique de l'appli dès qu'une nouvelle version est publiée",
     "Note des lecteurs Babelio sur chaque idée",
-    "Étoiles toujours visibles sur les livres terminés : note d'un geste",
-    "Les propositions ne s'affichent plus que dans l'onglet Idées"
+    "Étoiles toujours visibles sur les livres terminés : note d'un geste"
   ]
 }

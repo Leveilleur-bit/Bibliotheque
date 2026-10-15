@@ -8,6 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
+const VERSION_APPLI = "15";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -355,7 +356,7 @@ function vueReglages() {
     </section>
     <section class="carte">
       <h2>À propos</h2>
-      <p class="doux">Version <span id="num-version">…</span>. Code : <a href="https://github.com/Leveilleur-bit/Bibliotheque" target="_blank" rel="noopener">Leveilleur-bit/Bibliotheque</a>.</p>
+      <p class="doux">Version installée : ${VERSION_APPLI} · publiée : <span id="num-version">…</span>. Code : <a href="https://github.com/Leveilleur-bit/Bibliotheque" target="_blank" rel="noopener">Leveilleur-bit/Bibliotheque</a>.</p>
     </section>`;
 }
 
@@ -583,6 +584,27 @@ function importer(fichier) {
   r.readAsText(fichier);
 }
 
+/* ---------- Mise à jour de l'appli ---------- */
+
+// Compare la version installée à celle publiée sur GitHub Pages ;
+// si elle a changé, on vide les caches et on recharge une seule fois.
+async function verifierMiseAJour() {
+  try {
+    const r = await fetch("version.json?t=" + Date.now(), { cache: "no-store" });
+    const v = await r.json();
+    if (String(v.version) === VERSION_APPLI) return;
+    if (sessionStorage.getItem("maj-tentee") === v.version) return;   // pas de boucle
+    sessionStorage.setItem("maj-tentee", v.version);
+    toast("Nouvelle version " + v.version + " : mise à jour…");
+    if ("serviceWorker" in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) await reg.update().catch(() => {});
+    }
+    if (window.caches) for (const k of await caches.keys()) await caches.delete(k);
+    setTimeout(() => location.reload(), 600);
+  } catch (e) { /* hors ligne : on réessaiera */ }
+}
+
 /* ---------- Branchements ---------- */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -617,4 +639,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!TITRES_VUES[ui.vue]) ui.vue = "fantasy";
   rendre();
+  setTimeout(verifierMiseAJour, 1500);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") verifierMiseAJour(); });
 });
