@@ -194,7 +194,11 @@ code { font-size: .9em; background: var(--surface-2); padding: 1px 5px; border-r
 
 /* ---------- Fonds d'ambiance ---------- */
 .fond {
-  position: fixed; inset: 0; z-index: -1;
+  /* Hauteur figée sur le plus grand écran possible (barre d'adresse cachée) :
+     le fond ne se redimensionne plus quand Chrome affiche ou masque sa barre. */
+  position: fixed; top: 0; left: 0; right: 0; z-index: -1;
+  height: 100vh; height: 100lvh;
+  transform: translateZ(0); will-change: transform;
   background-size: cover; background-position: center top;
   --voile: linear-gradient(180deg, rgba(6,6,10,.45) 0%, rgba(6,6,10,.25) 35%, rgba(6,6,10,.8) 80%);
   background-image: var(--voile), url("../img/audible.jpg");

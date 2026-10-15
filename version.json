@@ -1,9 +1,9 @@
 {
-  "version": "10",
+  "version": "11",
   "date": "2026-10-15",
   "nouveautes": [
+    "Le fond ne saute plus pendant le défilement",
     "Le compteur de livres écoutés et lus compte chaque tome",
-    "Cartes entièrement transparentes avec un simple filet",
-    "Encore plus de transparence"
+    "Cartes entièrement transparentes avec un simple filet"
   ]
 }
