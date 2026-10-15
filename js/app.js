@@ -341,11 +341,9 @@ function rendre() {
   const vues = { audible: vueAudible, fantasy: () => vueGenre("fantasy"), sf: () => vueGenre("sf"), autre: () => vueGenre("autre"), envies: vueEnvies, propositions: vuePropositions, reglages: vueReglages };
   vue.innerHTML = (vues[ui.vue] || vueAudible)();
   const genre = ["fantasy", "sf", "autre"].includes(ui.vue) ? ui.vue : null;
-  document.body.classList.toggle("genre-fantasy", genre === "fantasy");
-  document.body.classList.toggle("genre-sf", genre === "sf");
-  document.body.classList.toggle("genre-autre", genre === "autre");
-  document.body.classList.toggle("genre-audible", ui.vue === "audible");
-  vue.classList.toggle("sur-image", !!genre || ui.vue === "audible");
+  // Fond d'ambiance : chaque onglet a le sien
+  document.body.dataset.fond = genre || { envies: "autre", propositions: "audible", reglages: "audible" }[ui.vue] || "audible";
+  vue.classList.add("sur-image");
   $("#titre-vue").textContent = ui.vue === "audible" ? "Ma Bibliothèque" : TITRES_VUES[ui.vue];
   document.querySelectorAll(".barre button").forEach(b => b.setAttribute("aria-current", b.dataset.vue === ui.vue ? "page" : "false"));
   $("#btn-reglages").setAttribute("aria-pressed", String(ui.vue === "reglages"));
