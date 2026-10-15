@@ -4,7 +4,7 @@
    surfaces en verre fumé, or patiné pour l'accent, titres à empattements. */
 :root {
   --bg: #0b0c12;
-  --surface: rgba(18, 17, 22, .40);
+  --surface: rgba(18, 17, 22, .24);
   --surface-2: rgba(255, 255, 255, .08);
   --opaque: #18171d;
   --fg: #efe9dc;
@@ -17,7 +17,7 @@
   --ok-bg: rgba(60, 140, 90, .28);
   --warn: #f2ad80;
   --warn-bg: rgba(200, 100, 50, .26);
-  --verre: rgba(8, 8, 12, .55);
+  --verre: rgba(8, 8, 12, .72);
   --display: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
   --body: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
   --barre-h: 64px;
@@ -208,15 +208,15 @@ body[data-fond="autre"] .fond { background-image: var(--voile), url("../img/autr
 body[data-fond="fantasy"] .genre-tete h2 { color: #f0d9a8; }
 body[data-fond="sf"] .genre-tete h2 { color: #9fe3ff; }
 body[data-fond="autre"] .genre-tete h2 { color: #f2c98a; }
-.sur-image .filtres button { background: rgba(14,13,18,.5); border-color: rgba(255,255,255,.18); color: rgba(243,241,234,.8); backdrop-filter: blur(6px); }
+.sur-image .filtres button { background: rgba(14,13,18,.32); border-color: rgba(255,255,255,.18); color: rgba(243,241,234,.8); backdrop-filter: blur(6px); }
 .sur-image .filtres button[aria-pressed="true"] { background: var(--accent); border-color: transparent; color: var(--accent-ink); }
-.sur-image .recherche { background: rgba(14,13,18,.5); border-color: rgba(255,255,255,.2); color: #f3f1ea; backdrop-filter: blur(6px); }
+.sur-image .recherche { background: rgba(14,13,18,.32); border-color: rgba(255,255,255,.2); color: #f3f1ea; backdrop-filter: blur(6px); }
 .sur-image .recherche::placeholder { color: rgba(243,241,234,.6); }
-.sur-image .vide { background: rgba(14,13,18,.5); backdrop-filter: blur(8px); border-color: rgba(255,255,255,.25); color: rgba(243,241,234,.85); }
-.credits, .journal { -webkit-backdrop-filter: blur(12px) saturate(1.2); backdrop-filter: blur(12px) saturate(1.2); border-color: rgba(255,255,255,.14); }
+.sur-image .vide { background: rgba(14,13,18,.3); backdrop-filter: blur(8px); border-color: rgba(255,255,255,.25); color: rgba(243,241,234,.85); }
+.credits, .journal { -webkit-backdrop-filter: blur(9px) saturate(1.25); backdrop-filter: blur(9px) saturate(1.25); border-color: rgba(255,255,255,.14); }
 .sur-image details.repli > summary { color: #f3f1ea; text-shadow: 0 1px 8px rgba(0,0,0,.6); }
-.sur-image .btn-sec { background: rgba(14,13,18,.5); backdrop-filter: blur(6px); border-color: rgba(255,255,255,.2); color: #f3f1ea; }
-.livre { -webkit-backdrop-filter: blur(12px) saturate(1.2); backdrop-filter: blur(12px) saturate(1.2); border-color: rgba(255,255,255,.14); }
+.sur-image .btn-sec { background: rgba(14,13,18,.32); backdrop-filter: blur(6px); border-color: rgba(255,255,255,.2); color: #f3f1ea; }
+.livre { -webkit-backdrop-filter: blur(9px) saturate(1.25); backdrop-filter: blur(9px) saturate(1.25); border-color: rgba(255,255,255,.14); }
 .sur-image .journal-ligne { border-color: rgba(255,255,255,.12); }
 .pastille.support { border: 1px solid currentColor; color: var(--muted); background: transparent; }
 
@@ -251,3 +251,8 @@ body[data-fond="autre"] .genre-tete h2 { color: #f2c98a; }
   .journal-ligne .d { grid-column: 1 / -1; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* Lisibilité sur verre plus clair */
+.livre, .credits, .journal, .carte { text-shadow: 0 1px 3px rgba(0,0,0,.55); }
+.barre button, .entete { text-shadow: 0 1px 4px rgba(0,0,0,.6); }
+.entete, .barre { -webkit-backdrop-filter: blur(22px) saturate(1.3) !important; backdrop-filter: blur(22px) saturate(1.3) !important; }
