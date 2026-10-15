@@ -256,3 +256,19 @@ body[data-fond="autre"] .genre-tete h2 { color: #f2c98a; }
 .livre, .credits, .journal, .carte { text-shadow: 0 1px 3px rgba(0,0,0,.55); }
 .barre button, .entete { text-shadow: 0 1px 4px rgba(0,0,0,.6); }
 .entete, .barre { -webkit-backdrop-filter: blur(22px) saturate(1.3) !important; backdrop-filter: blur(22px) saturate(1.3) !important; }
+
+/* v9 : cartes entièrement transparentes, simple filet clair */
+.sur-image .livre, .sur-image .credits, .sur-image .journal, .sur-image .carte,
+.sur-image .vide, .sur-image .recherche, .sur-image .btn-sec,
+.sur-image .filtres button:not([aria-pressed="true"]) {
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  border-color: rgba(255, 255, 255, .16) !important;
+}
+.sur-image .livre, .sur-image .credits, .sur-image .journal, .sur-image .carte,
+.sur-image .vide, .sur-image .intro, .sur-image .filtres button, .sur-image .btn-sec,
+.sur-image .btn-discret, .sur-image .genre-tete {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .95), 0 0 12px rgba(0, 0, 0, .7);
+}
+.sur-image .pastille.neutre, .sur-image .pastille.support { background: rgba(0, 0, 0, .25); }
+.sur-image .filtres button[aria-pressed="true"], .sur-image .btn { text-shadow: none; }
