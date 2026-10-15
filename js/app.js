@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "16";   // doit correspondre à version.json
+const VERSION_APPLI = "17";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -107,6 +107,26 @@ function livresFinis(l) {
   return l.statut === "ecoute" || l.statut === "lu" ? 1 : 0;
 }
 const totalFinis = liste => liste.reduce((n, l) => n + livresFinis(l), 0);
+
+// Unités terminées (un tome coché, ou un livre sans tomes), avec une clé de titre
+// pour reconnaître le même livre écouté ET lu en papier.
+const cleTitre = t => String(t || "").replace(/\(.*?\)/g, " ").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+function unitesFinies(liste) {
+  const u = [];
+  for (const l of liste) {
+    const tomes = Array.isArray(l.tomes) ? l.tomes : [];
+    if (tomes.length) tomes.filter(t => t.ecoute).forEach(t => u.push({ cle: cleTitre(t.titre), genre: genreDe(l) }));
+    else if (l.statut === "ecoute" || l.statut === "lu") u.push({ cle: cleTitre(l.titre), genre: genreDe(l) });
+  }
+  return u;
+}
+const memeLivre = (a, b) => a === b;   // titre exact (sans accents ni parenthèses)
+// Lectures uniques : un livre écouté et lu en papier ne compte qu'une fois
+function lecturesUniques(audio, papier) {
+  const doublons = papier.filter(p => audio.some(a => memeLivre(a.cle, p.cle)));
+  return { total: audio.length + papier.length - doublons.length, doublons, papierSeul: papier.filter(p => !doublons.includes(p)) };
+}
 
 function categorieGenre(l) {
   // Les propositions restent dans l'onglet Idées
@@ -296,10 +316,11 @@ function vueAccueil() {
   const L = etat.livres;
   const ecouteFini = l => l.support === "audible" && (l.statut === "ecoute" || l.statut === "en_cours");
   const luFini = l => l.support === "papier" && l.statut === "lu";
-  const ecoutes = totalFinis(L.filter(ecouteFini));
-  const lus = totalFinis(L.filter(luFini));
-  const total = ecoutes + lus;
-  const parGenre = g => totalFinis(L.filter(l => genreDe(l) === g && (ecouteFini(l) || luFini(l))));
+  const uAudio = unitesFinies(L.filter(ecouteFini));
+  const uPapier = unitesFinies(L.filter(luFini));
+  const { total, doublons, papierSeul } = lecturesUniques(uAudio, uPapier);
+  const ecoutes = uAudio.length, lus = uPapier.length;
+  const parGenre = g => uAudio.filter(u => u.genre === g).length + papierSeul.filter(u => u.genre === g).length;
   const genres = [["fantasy", "Fantasy", "var(--accent)"], ["sf", "SF", "#8fc8e8"], ["autre", "Autres", "#b9a58a"]]
     .map(([g, t, c]) => ({ g, t, c, n: parGenre(g) })).filter(x => x.n);
   const pct = n => total ? (n / total * 100) : 0;
@@ -317,7 +338,7 @@ function vueAccueil() {
     <section class="accueil-tete">
       <div class="lbl">Lectures terminées</div>
       <div class="accueil-total">${total}</div>
-      <p>${ecoutes} écouté${ecoutes > 1 ? "s" : ""} sur Audible · ${lus} lu${lus > 1 ? "s" : ""} en papier</p>
+      <p>${ecoutes} écouté${ecoutes > 1 ? "s" : ""} sur Audible · ${lus} lu${lus > 1 ? "s" : ""} en papier${doublons.length ? `<br><span class="doux petit">${doublons.length} à la fois écouté${doublons.length > 1 ? "s" : ""} et lu${doublons.length > 1 ? "s" : ""}, comptés une fois</span>` : ""}</p>
     </section>
 
     <section class="carte accueil-bloc">
