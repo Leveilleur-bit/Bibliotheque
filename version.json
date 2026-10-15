@@ -1,9 +1,9 @@
 {
-  "version": "11",
+  "version": "12",
   "date": "2026-10-15",
   "nouveautes": [
+    "Les propositions ne s'affichent plus que dans l'onglet Idées",
     "Le fond ne saute plus pendant le défilement",
-    "Le compteur de livres écoutés et lus compte chaque tome",
-    "Cartes entièrement transparentes avec un simple filet"
+    "Le compteur de livres écoutés et lus compte chaque tome"
   ]
 }

@@ -95,8 +95,7 @@ const FILTRES_GENRE = [
   ["tout", "Tout"],
   ["audio", "Écouté"],
   ["papier", "Lu (papier)"],
-  ["avenir", "À venir"],
-  ["idees", "Idées"]
+  ["avenir", "À venir"]
 ];
 // Range un livre dans un des filtres des onglets Fantasy / SF
 // Nombre de livres réellement écoutés ou lus : chaque tome coché compte.
@@ -109,8 +108,8 @@ function livresFinis(l) {
 const totalFinis = liste => liste.reduce((n, l) => n + livresFinis(l), 0);
 
 function categorieGenre(l) {
-  if (l.statut === "propose") return "idees";
-  if (l.statut === "refuse" || l.statut === "archive") return null;
+  // Les propositions restent dans l'onglet Idées
+  if (l.statut === "propose" || l.statut === "refuse" || l.statut === "archive") return null;
   if (l.support === "audible") return l.statut === "ecoute" ? "audio" : "avenir";
   if (l.support === "papier") return l.statut === "lu" ? "papier" : "avenir";
   if (l.support === "envie") return "avenir";
@@ -315,7 +314,7 @@ function vueGenre(genre) {
   return `
     <section class="genre-tete">
       <h2>${GENRES[genre]}</h2>
-      <p>${ecoutes} livre${ecoutes > 1 ? "s" : ""} écouté${ecoutes > 1 ? "s" : ""} · ${lus} lu${lus > 1 ? "s" : ""} en papier · ${n("avenir")} à venir · ${pluriel(n("idees"), "idée")}</p>
+      <p>${ecoutes} livre${ecoutes > 1 ? "s" : ""} écouté${ecoutes > 1 ? "s" : ""} · ${lus} lu${lus > 1 ? "s" : ""} en papier · ${n("avenir")} à venir</p>
     </section>
     <section class="section">
       ${filtresHTML(FILTRES_GENRE, ui.filtreGenre, "filtre-genre", compter)}
