@@ -1,9 +1,9 @@
 {
-  "version": "17",
+  "version": "18",
   "date": "2026-10-15",
   "nouveautes": [
+    "Nouveau fond pour les Réglages : l'ours à la lanterne",
     "Accueil : un livre écouté et lu en papier ne compte qu'une fois",
-    "Onglet Accueil : tes chiffres, ton écoute en cours, ta prochaine idée et ce qui t'attend",
-    "Mise à jour automatique de l'appli dès qu'une nouvelle version est publiée"
+    "Onglet Accueil : tes chiffres, ton écoute en cours, ta prochaine idée et ce qui t'attend"
   ]
 }

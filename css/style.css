@@ -206,6 +206,7 @@ code { font-size: .9em; background: var(--surface-2); padding: 1px 5px; border-r
 body[data-fond="fantasy"] .fond { background-image: var(--voile), url("../img/fantasy.jpg"); background-position: center; }
 body[data-fond="sf"] .fond { background-image: linear-gradient(180deg, rgba(4,8,18,.5) 0%, rgba(4,8,18,.3) 35%, rgba(4,8,18,.8) 80%), url("../img/sf.jpg"); background-position: center; }
 body[data-fond="accueil"] .fond { background-image: linear-gradient(180deg, rgba(6,6,12,.35) 0%, rgba(6,6,12,.2) 30%, rgba(6,6,12,.8) 75%), url("../img/accueil.jpg"); background-position: center 30%; }
+body[data-fond="reglages"] .fond { background-image: linear-gradient(180deg, rgba(6,6,10,.5) 0%, rgba(6,6,10,.3) 35%, rgba(6,6,10,.82) 80%), url("../img/reglages.jpg"); background-position: center 40%; }
 body[data-fond="autre"] .fond { background-image: var(--voile), url("../img/autres.jpg"); }
 .genre-tete { color: #f3f1ea; display: grid; gap: 6px; padding-block: 28px 8px; text-shadow: 0 2px 12px rgba(0,0,0,.6); }
 .genre-tete h2 { font-weight: 700; font-size: 2.8rem; letter-spacing: .01em; line-height: 1.05; }
