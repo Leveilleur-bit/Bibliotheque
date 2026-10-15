@@ -1,8 +1,9 @@
 {
-  "version": "1",
+  "version": "2",
   "date": "2026-10-15",
   "nouveautes": [
-    "Première version : onglets Audible, Bibliothèque, Envies et Propositions",
-    "Synchronisation avec le dépôt privé bibliotheque-donnees, que Claude complète aussi"
+    "Onglets Fantasy et SF : tes livres rangés par genre, avec leur ambiance en fond",
+    "Un champ « Genre » sur chaque livre (Modifier)",
+    "Barre d'onglets raccourcie : Audible · Papier · Fantasy · SF · Envies · Idées"
   ]
 }

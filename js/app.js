@@ -52,11 +52,11 @@ function normaliser(d) {
 }
 
 let etat = normaliser(lireJSON(CLE_STOCKAGE));
-const ui = Object.assign({ vue: "audible", filtreAudible: "a_ecouter", filtrePapier: "lu", recherche: "" }, lireJSON(CLE_UI) || {});
+const ui = Object.assign({ vue: "audible", filtreAudible: "a_ecouter", filtrePapier: "lu", filtreGenre: "tout", recherche: "" }, lireJSON(CLE_UI) || {});
 const ouverts = new Set();
 let suppressionEnAttente = null;
 
-function sauverUI() { ecrireJSON(CLE_UI, { vue: ui.vue, filtreAudible: ui.filtreAudible, filtrePapier: ui.filtrePapier }); }
+function sauverUI() { ecrireJSON(CLE_UI, { vue: ui.vue, filtreAudible: ui.filtreAudible, filtrePapier: ui.filtrePapier, filtreGenre: ui.filtreGenre }); }
 
 // À appeler après chaque changement fait par l'utilisateur
 function sauvegarder() {
@@ -92,7 +92,24 @@ const FILTRES_PAPIER = [
   ["lu", "Lu"],
   ["a_lire", "À lire"]
 ];
-const TITRES_VUES = { audible: "Audible", papier: "Bibliothèque", envies: "Envies", propositions: "Propositions", reglages: "Réglages" };
+const TITRES_VUES = { audible: "Audible", papier: "Bibliothèque", fantasy: "Fantasy", sf: "Science-fiction", envies: "Envies", propositions: "Propositions", reglages: "Réglages" };
+const GENRES = { fantasy: "Fantasy", sf: "Science-fiction", autre: "Autre" };
+const FILTRES_GENRE = [
+  ["tout", "Tout"],
+  ["audio", "Écouté"],
+  ["papier", "Lu"],
+  ["avenir", "À venir"],
+  ["idees", "Idées"]
+];
+// Range un livre dans un des filtres des onglets Fantasy / SF
+function categorieGenre(l) {
+  if (l.statut === "propose") return "idees";
+  if (l.statut === "refuse" || l.statut === "archive") return null;
+  if (l.support === "audible") return l.statut === "ecoute" ? "audio" : "avenir";
+  if (l.support === "papier") return l.statut === "lu" ? "papier" : "avenir";
+  if (l.support === "envie") return "avenir";
+  return null;
+}
 const FORMATS_ENVIE = { audio: "En audio", papier: "En papier", indifferent: "Audio ou papier" };
 
 /* ---------- Carte d'un livre ---------- */
@@ -288,6 +305,24 @@ function vuePropositions() {
       </details>` : ""}`;
 }
 
+function vueGenre(genre) {
+  const livres = etat.livres.filter(l => l.genre === genre && categorieGenre(l));
+  const compter = f => f === "tout" ? livres.length : livres.filter(l => categorieGenre(l) === f).length;
+  const affiches = livres.filter(l => ui.filtreGenre === "tout" || categorieGenre(l) === ui.filtreGenre).sort(parTitre);
+  const n = f => compter(f);
+  const autres = etat.livres.filter(l => !l.genre && categorieGenre(l)).length;
+  return `
+    <section class="genre-tete">
+      <h2>${GENRES[genre]}</h2>
+      <p>${pluriel(n("audio"), "écoute")} · ${n("papier")} lu${n("papier") > 1 ? "s" : ""} en papier · ${n("avenir")} à venir · ${pluriel(n("idees"), "idée")}</p>
+    </section>
+    <section class="section">
+      ${filtresHTML(FILTRES_GENRE, ui.filtreGenre, "filtre-genre", compter)}
+      ${listeHTML(affiches, livres.length ? "Rien dans ce filtre." : "Aucun livre rangé dans ce genre pour l'instant. Choisis le genre d'un livre avec « Modifier ».")}
+      ${autres ? `<p class="petit" style="margin:0;color:rgba(243,241,234,.8)">${pluriel(autres, "livre")} sans genre : donne-leur un genre avec « Modifier ».</p>` : ""}
+    </section>`;
+}
+
 function vueReglages() {
   const nb = s => etat.livres.filter(l => l.support === s).length;
   return `
@@ -309,8 +344,12 @@ function vueReglages() {
 
 function rendre() {
   const vue = $("#vue");
-  const vues = { audible: vueAudible, papier: vuePapier, envies: vueEnvies, propositions: vuePropositions, reglages: vueReglages };
+  const vues = { audible: vueAudible, papier: vuePapier, fantasy: () => vueGenre("fantasy"), sf: () => vueGenre("sf"), envies: vueEnvies, propositions: vuePropositions, reglages: vueReglages };
   vue.innerHTML = (vues[ui.vue] || vueAudible)();
+  const genre = ui.vue === "fantasy" || ui.vue === "sf" ? ui.vue : null;
+  document.body.classList.toggle("genre-fantasy", genre === "fantasy");
+  document.body.classList.toggle("genre-sf", genre === "sf");
+  vue.classList.toggle("sur-image", !!genre);
   $("#titre-vue").textContent = ui.vue === "audible" ? "Ma Bibliothèque" : TITRES_VUES[ui.vue];
   document.querySelectorAll(".barre button").forEach(b => b.setAttribute("aria-current", b.dataset.vue === ui.vue ? "page" : "false"));
   $("#btn-reglages").setAttribute("aria-pressed", String(ui.vue === "reglages"));
@@ -350,11 +389,14 @@ function formulaireLivre({ type, l }) {
       <div class="champ"><label class="lbl" for="f-statut">Où le ranger</label>
         <select id="f-statut"><option value="lu"${!edition || l.statut === "lu" ? " selected" : ""}>Lu</option><option value="a_lire"${edition && l.statut === "a_lire" ? " selected" : ""}>À lire (je l'ai, pas encore lu)</option></select></div>` : "";
   const v = k => esc(edition ? l[k] || "" : "");
+  const genreDefaut = edition ? (l.genre || "autre") : (ui.vue === "sf" ? "sf" : "fantasy");
   ouvrirFenetre(`
     <h2>${edition ? "Modifier" : "Ajouter"} : ${titres[support]}</h2>
     <form id="f-livre" novalidate style="display:grid;gap:12px">
       <div class="champ"><label class="lbl" for="f-titre">Titre${support === "audible" ? " (tel qu'affiché sur audible.fr)" : ""}</label><input id="f-titre" value="${v("titre")}" required autocomplete="off"></div>
       <div class="champ"><label class="lbl" for="f-auteur">Auteur</label><input id="f-auteur" value="${v("auteur")}" autocomplete="off"></div>
+      <div class="champ"><label class="lbl" for="f-genre">Genre</label>
+        <select id="f-genre">${Object.entries(GENRES).map(([k, t]) => `<option value="${k}"${genreDefaut === k ? " selected" : ""}>${t}</option>`).join("")}</select></div>
       ${support === "audible" ? `
         <div class="champ"><label class="lbl" for="f-narr">Lu par</label><input id="f-narr" value="${v("narrateur")}" autocomplete="off"></div>
         <div class="champ"><label class="lbl" for="f-lien">Lien de la fiche audible.fr</label><input id="f-lien" inputmode="url" value="${v("lien")}" placeholder="https://www.audible.fr/pd/…" autocomplete="off"></div>` : ""}
@@ -380,6 +422,8 @@ function formulaireLivre({ type, l }) {
       const titre = val("#f-titre");
       if (!titre) return erreur("Indique le titre.");
       const champs = { titre, auteur: val("#f-auteur"), notes: val("#f-notes") };
+      const g = val("#f-genre");
+      champs.genre = g === "autre" ? "" : g;
       if (support === "audible") {
         const verif = dlg.querySelector("#f-verif").checked;
         Object.assign(champs, { narrateur: val("#f-narr"), lien: val("#f-lien"), statut: val("#f-statut") });
@@ -450,6 +494,7 @@ function agir(btn) {
     case "ouvrir": ouverts.has(id) ? ouverts.delete(id) : ouverts.add(id); rendre(); return;
     case "filtre-audible": ui.filtreAudible = btn.dataset.f; sauverUI(); rendre(); return;
     case "filtre-papier": ui.filtrePapier = btn.dataset.f; sauverUI(); rendre(); return;
+    case "filtre-genre": ui.filtreGenre = btn.dataset.f; sauverUI(); rendre(); return;
     case "ajouter": formulaireLivre({ type: btn.dataset.type }); return;
     case "modifier": if (l) formulaireLivre({ l }); return;
     case "credit": changerSolde(+btn.dataset.d); sauvegarder(); return;
