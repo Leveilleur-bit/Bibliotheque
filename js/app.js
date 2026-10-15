@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "15";   // doit correspondre à version.json
+const VERSION_APPLI = "16";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -89,7 +89,7 @@ const FILTRES_AUDIBLE = [
   ["en_cours", "En cours"],
   ["ecoute", "Écouté"]
 ];
-const TITRES_VUES = { audible: "Audible", fantasy: "Fantasy", sf: "Science-fiction", autre: "Autres lectures", envies: "Envies", propositions: "Propositions", reglages: "Réglages" };
+const TITRES_VUES = { accueil: "Ma Bibliothèque", audible: "Audible", fantasy: "Fantasy", sf: "Science-fiction", autre: "Autres lectures", envies: "Envies", propositions: "Propositions", reglages: "Réglages" };
 const GENRES = { fantasy: "Fantasy", sf: "Science-fiction", autre: "Autres lectures" };
 const genreDe = l => l.genre === "fantasy" || l.genre === "sf" ? l.genre : "autre";
 const FILTRES_GENRE = [
@@ -290,6 +290,83 @@ function correspond(l, q) {
 }
 
 
+/* ---------- Accueil ---------- */
+
+function vueAccueil() {
+  const L = etat.livres;
+  const ecouteFini = l => l.support === "audible" && (l.statut === "ecoute" || l.statut === "en_cours");
+  const luFini = l => l.support === "papier" && l.statut === "lu";
+  const ecoutes = totalFinis(L.filter(ecouteFini));
+  const lus = totalFinis(L.filter(luFini));
+  const total = ecoutes + lus;
+  const parGenre = g => totalFinis(L.filter(l => genreDe(l) === g && (ecouteFini(l) || luFini(l))));
+  const genres = [["fantasy", "Fantasy", "var(--accent)"], ["sf", "SF", "#8fc8e8"], ["autre", "Autres", "#b9a58a"]]
+    .map(([g, t, c]) => ({ g, t, c, n: parGenre(g) })).filter(x => x.n);
+  const pct = n => total ? (n / total * 100) : 0;
+
+  const enCours = L.filter(l => l.support === "audible" && l.statut === "en_cours");
+  const idee = L.filter(l => l.statut === "propose").sort((a, b) => (a.rang ?? 99) - (b.rang ?? 99))[0];
+  const aEcouter = L.filter(l => l.support === "audible" && l.statut === "a_ecouter");
+  const pile = L.filter(l => l.support === "papier" && l.statut === "a_lire");
+  const envies = L.filter(l => l.support === "envie");
+  // la pile à lire mène au genre où elle est la plus fournie
+  const genrePile = ["fantasy", "sf", "autre"].sort((x, y) => pile.filter(l => genreDe(l) === y).length - pile.filter(l => genreDe(l) === x).length)[0];
+  const titres = liste => liste.slice(0, 3).map(l => `<i>${esc(l.titre)}</i>`).join(", ") + (liste.length > 3 ? "…" : "");
+
+  return `
+    <section class="accueil-tete">
+      <div class="lbl">Lectures terminées</div>
+      <div class="accueil-total">${total}</div>
+      <p>${ecoutes} écouté${ecoutes > 1 ? "s" : ""} sur Audible · ${lus} lu${lus > 1 ? "s" : ""} en papier</p>
+    </section>
+
+    <section class="carte accueil-bloc">
+      <div class="section-titre"><h2>Par genre</h2><span class="doux petit">tomes compris</span></div>
+      <div class="barre-genres" role="img" aria-label="${genres.map(x => x.t + " " + x.n).join(", ")}">
+        ${genres.map(x => `<span style="width:${pct(x.n)}%;background:${x.c}"></span>`).join("")}
+      </div>
+      <div class="legende-genres">
+        ${genres.map(x => `<button class="legende" data-act="aller" data-vue="${x.g}"><span class="pastille-couleur" style="background:${x.c}"></span>${x.t}<b>${x.n}</b><span class="doux">${Math.round(pct(x.n))} %</span></button>`).join("")}
+      </div>
+    </section>
+
+    <section class="carte accueil-bloc">
+      <div class="section-titre"><h2>En ce moment</h2><button class="btn-discret" data-act="aller" data-vue="audible">Audible ›</button></div>
+      ${enCours.length ? enCours.map(l => `
+        <div class="accueil-ligne">
+          <span class="accueil-icone" aria-hidden="true">▶</span>
+          <div><b>${esc(l.titre)}</b>${l.auteur ? `<div class="doux petit">${esc(l.auteur)}</div>` : ""}${l.notes ? `<div class="doux petit">${esc(l.notes)}</div>` : ""}</div>
+        </div>`).join("") : `<p class="doux">Aucune écoute en cours.</p>`}
+      <div class="accueil-ligne">
+        <span class="accueil-icone" aria-hidden="true">◆</span>
+        <div><b>${pluriel(etat.credits.solde || 0, "crédit")} Audible</b> <span class="doux petit">disponible${(etat.credits.solde || 0) > 1 ? "s" : ""}</span></div>
+      </div>
+    </section>
+
+    ${idee ? `
+    <section class="carte accueil-bloc">
+      <div class="section-titre"><h2>Prochaine idée</h2><button class="btn-discret" data-act="aller" data-vue="propositions">Toutes ›</button></div>
+      <div><b class="accueil-idee">${esc(idee.titre)}</b>${idee.auteur ? `<div class="doux petit">${esc(idee.auteur)}${idee.axe ? " · " + esc(idee.axe) : ""}</div>` : ""}</div>
+      ${noteSiteHTML(idee)}
+    </section>` : ""}
+
+    <section class="carte accueil-bloc">
+      <div class="section-titre"><h2>Ce qui t'attend</h2></div>
+      <button class="accueil-ligne lien-ligne" data-act="aller" data-vue="audible" data-filtre="a_ecouter">
+        <span class="accueil-nb">${aEcouter.length}</span>
+        <div><b>à écouter</b>${aEcouter.length ? `<div class="doux petit">${titres(aEcouter)}</div>` : ""}</div>
+      </button>
+      <button class="accueil-ligne lien-ligne" data-act="aller" data-vue="${genrePile}" data-genre-filtre="avenir">
+        <span class="accueil-nb">${pile.length}</span>
+        <div><b>dans ta pile à lire</b>${pile.length ? `<div class="doux petit">${titres(pile)}</div>` : ""}</div>
+      </button>
+      <button class="accueil-ligne lien-ligne" data-act="aller" data-vue="envies">
+        <span class="accueil-nb">${envies.length}</span>
+        <div><b>envie${envies.length > 1 ? "s" : ""} notée${envies.length > 1 ? "s" : ""}</b>${envies.length ? `<div class="doux petit">${titres(envies)}</div>` : `<div class="doux petit">Note les livres qu'on te conseille.</div>`}</div>
+      </button>
+    </section>`;
+}
+
 function vueEnvies() {
   const envies = etat.livres.filter(l => l.support === "envie").sort(parMaj);
   return `
@@ -362,13 +439,13 @@ function vueReglages() {
 
 function rendre() {
   const vue = $("#vue");
-  const vues = { audible: vueAudible, fantasy: () => vueGenre("fantasy"), sf: () => vueGenre("sf"), autre: () => vueGenre("autre"), envies: vueEnvies, propositions: vuePropositions, reglages: vueReglages };
-  vue.innerHTML = (vues[ui.vue] || vueAudible)();
+  const vues = { accueil: vueAccueil, audible: vueAudible, fantasy: () => vueGenre("fantasy"), sf: () => vueGenre("sf"), autre: () => vueGenre("autre"), envies: vueEnvies, propositions: vuePropositions, reglages: vueReglages };
+  vue.innerHTML = (vues[ui.vue] || vueAccueil)();
   const genre = ["fantasy", "sf", "autre"].includes(ui.vue) ? ui.vue : null;
   // Fond d'ambiance : chaque onglet a le sien
-  document.body.dataset.fond = genre || { envies: "autre", propositions: "audible", reglages: "audible" }[ui.vue] || "audible";
+  document.body.dataset.fond = genre || { accueil: "accueil", envies: "autre", propositions: "audible", reglages: "audible" }[ui.vue] || "audible";
   vue.classList.add("sur-image");
-  $("#titre-vue").textContent = ui.vue === "audible" ? "Ma Bibliothèque" : TITRES_VUES[ui.vue];
+  $("#titre-vue").textContent = ui.vue === "audible" ? "Audible" : TITRES_VUES[ui.vue];
   document.querySelectorAll(".barre button").forEach(b => b.setAttribute("aria-current", b.dataset.vue === ui.vue ? "page" : "false"));
   $("#btn-reglages").setAttribute("aria-pressed", String(ui.vue === "reglages"));
   if (ui.vue === "reglages") {
@@ -511,6 +588,11 @@ function agir(btn) {
   switch (act) {
     case "ouvrir": ouverts.has(id) ? ouverts.delete(id) : ouverts.add(id); rendre(); return;
     case "filtre-audible": ui.filtreAudible = btn.dataset.f; sauverUI(); rendre(); return;
+    case "aller":
+      if (btn.dataset.filtre) ui.filtreAudible = btn.dataset.filtre;
+      if (btn.dataset.genreFiltre) ui.filtreGenre = btn.dataset.genreFiltre;
+      allerA(btn.dataset.vue);
+      return;
     case "filtre-genre": ui.filtreGenre = btn.dataset.f; sauverUI(); rendre(); return;
     case "ajouter": formulaireLivre({ type: btn.dataset.type }); return;
     case "modifier": if (l) formulaireLivre({ l }); return;
@@ -609,7 +691,7 @@ async function verifierMiseAJour() {
 
 document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll(".barre button").forEach(b => b.addEventListener("click", () => allerA(b.dataset.vue)));
-  $("#btn-reglages").addEventListener("click", () => allerA(ui.vue === "reglages" ? "audible" : "reglages"));
+  $("#btn-reglages").addEventListener("click", () => allerA(ui.vue === "reglages" ? "accueil" : "reglages"));
 
   const vue = $("#vue");
   vue.addEventListener("click", ev => {
@@ -637,7 +719,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   $("#fenetre").addEventListener("click", ev => { if (ev.target === ev.currentTarget) fermerFenetre(); });
 
-  if (!TITRES_VUES[ui.vue]) ui.vue = "fantasy";
+  ui.vue = "accueil";   // l'appli s'ouvre toujours sur l'accueil
   rendre();
   setTimeout(verifierMiseAJour, 1500);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") verifierMiseAJour(); });

@@ -1,9 +1,9 @@
 {
-  "version": "15",
+  "version": "16",
   "date": "2026-10-15",
   "nouveautes": [
+    "Onglet Accueil : tes chiffres, ton écoute en cours, ta prochaine idée et ce qui t'attend",
     "Mise à jour automatique de l'appli dès qu'une nouvelle version est publiée",
-    "Note des lecteurs Babelio sur chaque idée",
-    "Étoiles toujours visibles sur les livres terminés : note d'un geste"
+    "Note des lecteurs Babelio sur chaque idée"
   ]
 }
