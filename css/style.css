@@ -280,3 +280,12 @@ body[data-fond="autre"] .genre-tete h2 { color: #f2c98a; }
 /* Étoiles toujours visibles sur les livres terminés */
 .etoiles button { font-size: 1.45rem; padding: 2px 3px; color: rgba(255, 255, 255, .28); text-shadow: none; }
 .etoiles button.on { color: var(--accent); text-shadow: 0 0 8px rgba(217, 181, 106, .45); }
+
+/* Note d'un site d'avis sur les idées */
+.note-site { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: .9rem; color: var(--muted); }
+.note-site b { color: var(--fg); font-size: 1rem; }
+.etoiles-site { position: relative; display: inline-block; font-size: 1.2rem; line-height: 1; letter-spacing: 2px; color: rgba(255, 255, 255, .25); text-shadow: none; }
+.etoiles-site::before {
+  content: "★★★★★"; position: absolute; inset: 0 auto 0 0; overflow: hidden; white-space: nowrap;
+  width: calc(var(--v) / 5 * 100%); color: var(--accent); text-shadow: 0 0 8px rgba(217, 181, 106, .4);
+}

@@ -1,9 +1,9 @@
 {
-  "version": "13",
+  "version": "14",
   "date": "2026-10-15",
   "nouveautes": [
+    "Note des lecteurs Babelio sur chaque idée",
     "Étoiles toujours visibles sur les livres terminés : note d'un geste",
-    "Les propositions ne s'affichent plus que dans l'onglet Idées",
-    "Le fond ne saute plus pendant le défilement"
+    "Les propositions ne s'affichent plus que dans l'onglet Idées"
   ]
 }

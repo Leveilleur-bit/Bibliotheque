@@ -176,11 +176,24 @@ function carteLivre(l) {
         <span class="chevron" aria-hidden="true">▶</span>
       </button>
       ${pastilles.length ? `<div class="rangee">${pastilles.join("")}</div>` : ""}
+      ${noteSiteHTML(l)}
       ${l.notes ? `<p class="livre-notes">${esc(l.notes)}</p>` : ""}
       ${panneau}
       ${etoiles}
       <div class="rangee">${actionsLivre(l)}<button class="btn-discret" data-act="modifier" data-id="${esc(l.id)}">Modifier</button>${suppr}</div>
     </article>`;
+}
+
+// Note des lecteurs relevée sur un site d'avis (Babelio), affichée en étoiles partielles
+function noteSiteHTML(l) {
+  const n = l.noteSite;
+  if (!n || typeof n.valeur !== "number") return "";
+  const v = Math.max(0, Math.min(5, n.valeur));
+  const val = v.toFixed(2).replace(".", ",");
+  return `<div class="note-site">
+      <span class="etoiles-site" style="--v:${v}" role="img" aria-label="${val} sur 5">★★★★★</span>
+      <span><b>${val}</b>/5 sur ${n.lien ? `<a href="${esc(n.lien)}" target="_blank" rel="noopener">${esc(n.source || "Babelio")}</a>` : esc(n.source || "")}${n.nombre ? ` · ${esc(n.nombre)} notes` : ""}${n.ouvrage ? ` · ${esc(n.ouvrage)}` : ""}</span>
+    </div>`;
 }
 
 function actionsLivre(l) {
