@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "19";   // doit correspondre à version.json
+const VERSION_APPLI = "20";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -464,7 +464,7 @@ function rendre() {
   vue.innerHTML = (vues[ui.vue] || vueAccueil)();
   const genre = ["fantasy", "sf", "autre"].includes(ui.vue) ? ui.vue : null;
   // Fond d'ambiance : chaque onglet a le sien
-  document.body.dataset.fond = genre || { accueil: "accueil", envies: "autre", propositions: "idees", reglages: "reglages" }[ui.vue] || "audible";
+  document.body.dataset.fond = genre || { accueil: "accueil", envies: "envies", propositions: "idees", reglages: "reglages" }[ui.vue] || "audible";
   vue.classList.add("sur-image");
   $("#titre-vue").textContent = ui.vue === "audible" ? "Audible" : TITRES_VUES[ui.vue];
   document.querySelectorAll(".barre button").forEach(b => b.setAttribute("aria-current", b.dataset.vue === ui.vue ? "page" : "false"));

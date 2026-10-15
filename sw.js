@@ -4,11 +4,11 @@
    Fichiers de l'appli : cache d'abord, rafraîchis en arrière-plan.
    Incrémente CACHE_VERSION à chaque changement des fichiers.
    ============================================================ */
-const CACHE_VERSION = "v19";
+const CACHE_VERSION = "v20";
 const CACHE_NAME = "ma-bibliotheque-" + CACHE_VERSION;
 const FICHIERS = [
   "./", "./index.html", "./manifest.json", "./css/style.css",
-  "./js/app.js", "./js/sync.js", "./icon-192.png", "./icon-512.png", "./img/accueil.jpg", "./img/audible.jpg", "./img/autres.jpg", "./img/idees.jpg", "./img/reglages.jpg", "./img/fantasy.jpg", "./img/sf.jpg"
+  "./js/app.js", "./js/sync.js", "./icon-192.png", "./icon-512.png", "./img/accueil.jpg", "./img/audible.jpg", "./img/autres.jpg", "./img/envies.jpg", "./img/idees.jpg", "./img/reglages.jpg", "./img/fantasy.jpg", "./img/sf.jpg"
 ];
 
 self.addEventListener("install", event => {
