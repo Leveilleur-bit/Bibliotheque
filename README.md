@@ -40,7 +40,7 @@ privé `bibliotheque-donnees` (fichier `bibliotheque.json`) :
 
 1. Dans ce dépôt : **Settings → Pages → Source : Deploy from a branch**,
    branche `main`, dossier `/ (root)`.
-2. Ouvrir `https://leveilleur-bit.github.io/bibliotheque/` sur le téléphone,
+2. Ouvrir `https://leveilleur-bit.github.io/Bibliotheque/` sur le téléphone,
    puis « Ajouter à l'écran d'accueil ».
 3. Réglages → Synchronisation GitHub : coller le jeton.
 

@@ -303,7 +303,7 @@ function vueReglages() {
     </section>
     <section class="carte">
       <h2>À propos</h2>
-      <p class="doux">Version <span id="num-version">…</span>. Code : <a href="https://github.com/Leveilleur-bit/bibliotheque" target="_blank" rel="noopener">Leveilleur-bit/bibliotheque</a>.</p>
+      <p class="doux">Version <span id="num-version">…</span>. Code : <a href="https://github.com/Leveilleur-bit/Bibliotheque" target="_blank" rel="noopener">Leveilleur-bit/Bibliotheque</a>.</p>
     </section>`;
 }
 

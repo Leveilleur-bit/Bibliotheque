@@ -14,7 +14,7 @@ const CLE_AVANT_SYNCHRO = "maBibliothequeAvantSynchro";
 const FICHIER_DONNEES = "bibliotheque.json";
 const API_GITHUB = "https://api.github.com";
 const FORMAT_DEPOT = /^[\w.-]+\/[\w.-]+$/;
-const DEPOT_PAR_DEFAUT = "Leveilleur-bit/bibliotheque-donnees";
+const DEPOT_PAR_DEFAUT = "Leveilleur-bit/Bibliotheque-donnees";
 
 const syncEtat = { enCours: false, statut: "inactif", message: "", minuterie: null, dernierEssai: 0 };
 
