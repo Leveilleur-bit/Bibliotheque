@@ -52,11 +52,11 @@ function normaliser(d) {
 }
 
 let etat = normaliser(lireJSON(CLE_STOCKAGE));
-const ui = Object.assign({ vue: "audible", filtreAudible: "a_ecouter", filtrePapier: "lu", filtreGenre: "tout", recherche: "" }, lireJSON(CLE_UI) || {});
+const ui = Object.assign({ vue: "audible", filtreAudible: "a_ecouter", filtreGenre: "tout", recherche: "" }, lireJSON(CLE_UI) || {});
 const ouverts = new Set();
 let suppressionEnAttente = null;
 
-function sauverUI() { ecrireJSON(CLE_UI, { vue: ui.vue, filtreAudible: ui.filtreAudible, filtrePapier: ui.filtrePapier, filtreGenre: ui.filtreGenre }); }
+function sauverUI() { ecrireJSON(CLE_UI, { vue: ui.vue, filtreAudible: ui.filtreAudible, filtreGenre: ui.filtreGenre }); }
 
 // À appeler après chaque changement fait par l'utilisateur
 function sauvegarder() {
@@ -88,16 +88,12 @@ const FILTRES_AUDIBLE = [
   ["en_cours", "En cours"],
   ["ecoute", "Écouté"]
 ];
-const FILTRES_PAPIER = [
-  ["lu", "Lu"],
-  ["a_lire", "À lire"]
-];
-const TITRES_VUES = { audible: "Audible", papier: "Bibliothèque", fantasy: "Fantasy", sf: "Science-fiction", envies: "Envies", propositions: "Propositions", reglages: "Réglages" };
+const TITRES_VUES = { audible: "Audible", fantasy: "Fantasy", sf: "Science-fiction", envies: "Envies", propositions: "Propositions", reglages: "Réglages" };
 const GENRES = { fantasy: "Fantasy", sf: "Science-fiction", autre: "Autre" };
 const FILTRES_GENRE = [
   ["tout", "Tout"],
   ["audio", "Écouté"],
-  ["papier", "Lu"],
+  ["papier", "Lu (papier)"],
   ["avenir", "À venir"],
   ["idees", "Idées"]
 ];
@@ -266,23 +262,6 @@ function correspond(l, q) {
   return n(l.titre).includes(t) || n(l.auteur).includes(t) || (l.tomes || []).some(x => n(x.titre).includes(t));
 }
 
-function vuePapier() {
-  const papier = etat.livres.filter(l => l.support === "papier");
-  const compter = s => papier.filter(l => l.statut === s).length;
-  const affiches = papier.filter(l => l.statut === ui.filtrePapier && correspond(l, ui.recherche)).sort(parTitre);
-  const vides = {
-    lu: ui.recherche ? "Aucun livre lu ne correspond à ta recherche." : "Aucun livre lu enregistré. Ajoute-les ici, ou envoie à Claude des photos de tes étagères.",
-    a_lire: ui.recherche ? "Rien dans ta pile ne correspond." : "Ta pile à lire est vide : ce sont les livres que tu possèdes sans les avoir encore lus."
-  };
-  return `
-    <p class="intro">Tes livres papier : ceux que tu as lus et ta pile à lire. Ce qui est ici n'est jamais reproposé comme découverte.</p>
-    <section class="section">
-      ${filtresHTML(FILTRES_PAPIER, ui.filtrePapier, "filtre-papier", compter)}
-      <input class="recherche" id="recherche-papier" type="search" placeholder="Chercher un titre ou un auteur" value="${esc(ui.recherche)}" aria-label="Chercher dans la bibliothèque" autocomplete="off">
-      <div id="liste-papier">${listeHTML(affiches, vides[ui.filtrePapier])}</div>
-      <div><button class="btn-sec" data-act="ajouter" data-type="papier">+ Ajouter un livre papier</button></div>
-    </section>`;
-}
 
 function vueEnvies() {
   const envies = etat.livres.filter(l => l.support === "envie").sort(parMaj);
@@ -305,10 +284,17 @@ function vuePropositions() {
       </details>` : ""}`;
 }
 
+function livresGenre(genre) {
+  return etat.livres.filter(l => l.genre === genre && categorieGenre(l)
+    && (ui.filtreGenre === "tout" || categorieGenre(l) === ui.filtreGenre) && correspond(l, ui.recherche)).sort(parTitre);
+}
+const messageVideGenre = total => ui.recherche ? "Aucun livre ne correspond à ta recherche."
+  : total ? "Rien dans ce filtre." : "Aucun livre rangé dans ce genre pour l'instant. Ajoute-en un, ou choisis le genre d'un livre avec « Modifier ».";
+
 function vueGenre(genre) {
   const livres = etat.livres.filter(l => l.genre === genre && categorieGenre(l));
   const compter = f => f === "tout" ? livres.length : livres.filter(l => categorieGenre(l) === f).length;
-  const affiches = livres.filter(l => ui.filtreGenre === "tout" || categorieGenre(l) === ui.filtreGenre).sort(parTitre);
+  const affiches = livresGenre(genre);
   const n = f => compter(f);
   const autres = etat.livres.filter(l => !l.genre && categorieGenre(l)).length;
   return `
@@ -318,7 +304,12 @@ function vueGenre(genre) {
     </section>
     <section class="section">
       ${filtresHTML(FILTRES_GENRE, ui.filtreGenre, "filtre-genre", compter)}
-      ${listeHTML(affiches, livres.length ? "Rien dans ce filtre." : "Aucun livre rangé dans ce genre pour l'instant. Choisis le genre d'un livre avec « Modifier ».")}
+      <input class="recherche" id="recherche-genre" type="search" placeholder="Chercher un titre ou un auteur" value="${esc(ui.recherche)}" aria-label="Chercher dans ${GENRES[genre]}" autocomplete="off">
+      <div id="liste-genre">${listeHTML(affiches, messageVideGenre(livres.length))}</div>
+      <div class="rangee">
+        <button class="btn" data-act="ajouter" data-type="papier">+ Livre papier</button>
+        <button class="btn-sec" data-act="ajouter" data-type="audible">+ Livre audio</button>
+      </div>
       ${autres ? `<p class="petit" style="margin:0;color:rgba(243,241,234,.8)">${pluriel(autres, "livre")} sans genre : donne-leur un genre avec « Modifier ».</p>` : ""}
     </section>`;
 }
@@ -344,7 +335,7 @@ function vueReglages() {
 
 function rendre() {
   const vue = $("#vue");
-  const vues = { audible: vueAudible, papier: vuePapier, fantasy: () => vueGenre("fantasy"), sf: () => vueGenre("sf"), envies: vueEnvies, propositions: vuePropositions, reglages: vueReglages };
+  const vues = { audible: vueAudible, fantasy: () => vueGenre("fantasy"), sf: () => vueGenre("sf"), envies: vueEnvies, propositions: vuePropositions, reglages: vueReglages };
   vue.innerHTML = (vues[ui.vue] || vueAudible)();
   const genre = ui.vue === "fantasy" || ui.vue === "sf" ? ui.vue : null;
   document.body.classList.toggle("genre-fantasy", genre === "fantasy");
@@ -361,6 +352,7 @@ function rendre() {
 function rendreReglages() { if (ui.vue === "reglages") rendre(); }
 
 function allerA(vue) {
+  if (ui.vue !== vue) ui.recherche = "";
   ui.vue = vue;
   suppressionEnAttente = null;
   sauverUI();
@@ -441,7 +433,6 @@ function formulaireLivre({ type, l }) {
         const prefixe = { audible: "audio", papier: "papier", envie: "envie" }[support];
         etat.livres.push(Object.assign({ id: idDepuisTitre(titre, prefixe), support, statut: support === "envie" ? "envie" : champs.statut, ajoute: maintenant(), maj: maintenant() }, champs));
         if (support === "audible") ui.filtreAudible = ["a_ecouter", "en_cours", "ecoute"].includes(champs.statut) ? champs.statut : ui.filtreAudible;
-        if (support === "papier") ui.filtrePapier = champs.statut;
         sauverUI();
         sauvegarder();
         toast("« " + titre + " » ajouté.");
@@ -493,7 +484,6 @@ function agir(btn) {
   switch (act) {
     case "ouvrir": ouverts.has(id) ? ouverts.delete(id) : ouverts.add(id); rendre(); return;
     case "filtre-audible": ui.filtreAudible = btn.dataset.f; sauverUI(); rendre(); return;
-    case "filtre-papier": ui.filtrePapier = btn.dataset.f; sauverUI(); rendre(); return;
     case "filtre-genre": ui.filtreGenre = btn.dataset.f; sauverUI(); rendre(); return;
     case "ajouter": formulaireLivre({ type: btn.dataset.type }); return;
     case "modifier": if (l) formulaireLivre({ l }); return;
@@ -589,16 +579,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (nouveau) nouveau.focus();
   });
   vue.addEventListener("input", ev => {
-    if (ev.target.id !== "recherche-papier") return;
+    if (ev.target.id !== "recherche-genre") return;
     ui.recherche = ev.target.value;
-    const papier = etat.livres.filter(l => l.support === "papier" && l.statut === ui.filtrePapier && correspond(l, ui.recherche)).sort(parTitre);
-    $("#liste-papier").innerHTML = listeHTML(papier, "Aucun livre ne correspond à ta recherche.");
+    const total = etat.livres.filter(l => l.genre === ui.vue && categorieGenre(l)).length;
+    $("#liste-genre").innerHTML = listeHTML(livresGenre(ui.vue), messageVideGenre(total));
   });
   vue.addEventListener("change", ev => {
     if (ev.target.id === "import-fichier" && ev.target.files[0]) importer(ev.target.files[0]);
   });
   $("#fenetre").addEventListener("click", ev => { if (ev.target === ev.currentTarget) fermerFenetre(); });
 
-  if (!TITRES_VUES[ui.vue]) ui.vue = "audible";
+  if (!TITRES_VUES[ui.vue]) ui.vue = "fantasy";
   rendre();
 });

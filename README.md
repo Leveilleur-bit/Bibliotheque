@@ -14,7 +14,9 @@ Même principe que l'appli [Mon Potager](https://github.com/Leveilleur-bit/Potag
   en cours et écoutés, détail des tomes de chaque série, note sur 5 et
   journal des crédits. La règle de base : un titre n'entre dans « À écouter »
   qu'avec le lien de sa fiche audible.fr et la langue française vérifiée.
-- **Bibliothèque** : les livres papier lus et la pile à lire, avec recherche.
+- **Fantasy** et **SF** : tous les livres du genre, audio et papier, avec
+  leur ambiance en fond. Filtres Écouté, Lu (papier), À venir (à écouter,
+  pile à lire, envies) et Idées, recherche, ajout d'un livre papier ou audio.
 - **Envies** : ce que je veux lire ou écouter un jour, et les livres conseillés
   par des proches (avec le nom de la personne).
 - **Propositions** : les idées de Claude, classées et expliquées. « Je l'ajoute

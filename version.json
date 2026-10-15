@@ -1,9 +1,9 @@
 {
-  "version": "2",
+  "version": "3",
   "date": "2026-10-15",
   "nouveautes": [
-    "Onglets Fantasy et SF : tes livres rangés par genre, avec leur ambiance en fond",
-    "Un champ « Genre » sur chaque livre (Modifier)",
-    "Barre d'onglets raccourcie : Audible · Papier · Fantasy · SF · Envies · Idées"
+    "Plus d'onglet Papier : tes livres papier sont rangés dans Fantasy et SF (filtre « Lu (papier) »)",
+    "Recherche et ajout de livres directement dans Fantasy et SF",
+    "Barre d'onglets : Audible · Fantasy · SF · Envies · Idées"
   ]
 }

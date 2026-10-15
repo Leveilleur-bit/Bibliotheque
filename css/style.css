@@ -213,6 +213,8 @@ body.genre-fantasy .genre-tete h2 { color: #f0d9a8; }
 body.genre-sf .genre-tete h2 { color: #9fe3ff; }
 .sur-image .filtres button { background: rgba(20,22,32,.72); border-color: rgba(255,255,255,.18); color: rgba(243,241,234,.8); backdrop-filter: blur(6px); }
 .sur-image .filtres button[aria-pressed="true"] { background: rgba(243,241,234,.92); border-color: transparent; color: #12141c; }
+.sur-image .recherche { background: rgba(20,22,32,.72); border-color: rgba(255,255,255,.2); color: #f3f1ea; backdrop-filter: blur(6px); }
+.sur-image .recherche::placeholder { color: rgba(243,241,234,.6); }
 .sur-image .vide { background: rgba(20,22,32,.72); border-color: rgba(255,255,255,.25); color: rgba(243,241,234,.85); }
 .sur-image .livre { background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); }
 
@@ -220,14 +222,14 @@ body.genre-sf .genre-tete h2 { color: #9fe3ff; }
 .barre {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
   background: var(--surface); border-top: 1px solid var(--line);
-  display: grid; grid-template-columns: repeat(6, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
   padding-bottom: env(safe-area-inset-bottom, 0px);
   padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px);
 }
 .barre button {
   border: 0; background: none; cursor: pointer; height: var(--barre-h);
   display: grid; justify-items: center; align-content: center; gap: 2px;
-  color: var(--muted); font-size: .68rem; font-weight: 700; padding: 0 2px; min-width: 0;
+  color: var(--muted); font-size: .72rem; font-weight: 700; padding: 0 2px; min-width: 0;
 }
 .barre span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .barre svg { width: 24px; height: 24px; }
