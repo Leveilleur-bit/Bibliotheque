@@ -1,9 +1,9 @@
 {
-  "version": "21",
+  "version": "22",
   "date": "2026-10-15",
   "nouveautes": [
+    "Fonds d'écran plus lumineux",
     "Les filtres Écouté et Lu comptent les livres, comme les compteurs du haut",
-    "Essai : la salle aux crânes en fond des Envies",
-    "Nouveau fond pour les Idées : la grande bibliothèque à la coupole étoilée"
+    "Essai : la salle aux crânes en fond des Envies"
   ]
 }
