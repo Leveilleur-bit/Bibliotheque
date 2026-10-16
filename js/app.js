@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "22";   // doit correspondre à version.json
+const VERSION_APPLI = "23";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -152,6 +152,7 @@ function carteLivre(l) {
     const sup = { audible: "Audio", papier: "Papier", envie: "Envie" }[l.support];
     if (sup && l.statut !== "propose") pastilles.push(`<span class="pastille support">${sup}</span>`);
   }
+  if (l.support === "papier" && l.statut === "en_cours") pastilles.push(`<span class="pastille accent">En cours de lecture</span>`);
   if (l.statut === "propose" && l.axe) pastilles.push(`<span class="pastille accent">${l.rang ? "n°" + l.rang + " · " : ""}${esc(l.axe)}</span>`);
   if (l.support === "audible" && l.statut !== "propose" && l.statut !== "refuse") {
     pastilles.push(l.verifieFR
@@ -237,7 +238,8 @@ function actionsLivre(l) {
     return a;
   }
   if (l.support === "papier") {
-    return l.statut === "a_lire" ? `<button class="btn" data-act="lu" data-id="${id}">Lu</button>` : "";
+    if (l.statut === "a_lire") return `<button class="btn" data-act="lu" data-id="${id}">Lu</button><button class="btn-sec" data-act="commencer-lecture" data-id="${id}">Commencer</button>`;
+    return l.statut === "en_cours" ? `<button class="btn" data-act="lu" data-id="${id}">Terminé</button>` : "";
   }
   if (l.support === "envie") return `
     <button class="btn" data-act="valider" data-id="${id}">À écouter sur Audible</button>
@@ -327,7 +329,7 @@ function vueAccueil() {
     .map(([g, t, c]) => ({ g, t, c, n: parGenre(g) })).filter(x => x.n);
   const pct = n => total ? (n / total * 100) : 0;
 
-  const enCours = L.filter(l => l.support === "audible" && l.statut === "en_cours");
+  const enCours = L.filter(l => (l.support === "audible" || l.support === "papier") && l.statut === "en_cours");
   const idee = L.filter(l => l.statut === "propose").sort((a, b) => (a.rang ?? 99) - (b.rang ?? 99))[0];
   const aEcouter = L.filter(l => l.support === "audible" && l.statut === "a_ecouter");
   const pile = L.filter(l => l.support === "papier" && l.statut === "a_lire");
@@ -357,9 +359,9 @@ function vueAccueil() {
       <div class="section-titre"><h2>En ce moment</h2><button class="btn-discret" data-act="aller" data-vue="audible">Audible ›</button></div>
       ${enCours.length ? enCours.map(l => `
         <div class="accueil-ligne">
-          <span class="accueil-icone" aria-hidden="true">▶</span>
-          <div><b>${esc(l.titre)}</b>${l.auteur ? `<div class="doux petit">${esc(l.auteur)}</div>` : ""}${l.notes ? `<div class="doux petit">${esc(l.notes)}</div>` : ""}</div>
-        </div>`).join("") : `<p class="doux">Aucune écoute en cours.</p>`}
+          <span class="accueil-icone" aria-hidden="true">${l.support === "papier" ? "❧" : "▶"}</span>
+          <div><b>${esc(l.titre)}</b>${l.support === "papier" ? ` <span class="doux petit">en papier</span>` : ""}${l.auteur ? `<div class="doux petit">${esc(l.auteur)}</div>` : ""}${l.notes ? `<div class="doux petit">${esc(l.notes)}</div>` : ""}</div>
+        </div>`).join("") : `<p class="doux">Rien en cours.</p>`}
       <div class="accueil-ligne">
         <span class="accueil-icone" aria-hidden="true">◆</span>
         <div><b>${pluriel(etat.credits.solde || 0, "crédit")} Audible</b> <span class="doux petit">disponible${(etat.credits.solde || 0) > 1 ? "s" : ""}</span></div>
@@ -508,7 +510,7 @@ function formulaireLivre({ type, l }) {
         <select id="f-statut">${[["a_ecouter", "À écouter"], ["en_cours", "En cours"], ["ecoute", "Écouté"], ["propose", "Proposition"], ["refuse", "Écartée"], ["archive", "Archivé"]].map(([v, t]) => `<option value="${v}"${(edition ? l.statut : "a_ecouter") === v ? " selected" : ""}>${t}</option>`).join("")}</select></div>`
     : support === "papier" ? `
       <div class="champ"><label class="lbl" for="f-statut">Où le ranger</label>
-        <select id="f-statut"><option value="lu"${!edition || l.statut === "lu" ? " selected" : ""}>Lu</option><option value="a_lire"${edition && l.statut === "a_lire" ? " selected" : ""}>À lire (je l'ai, pas encore lu)</option></select></div>` : "";
+        <select id="f-statut"><option value="lu"${!edition || l.statut === "lu" ? " selected" : ""}>Lu</option><option value="en_cours"${edition && l.statut === "en_cours" ? " selected" : ""}>En cours de lecture</option><option value="a_lire"${edition && l.statut === "a_lire" ? " selected" : ""}>À lire (je l'ai, pas encore lu)</option></select></div>` : "";
   const v = k => esc(edition ? l[k] || "" : "");
   const genreDefaut = edition ? genreDe(l) : (ui.vue === "sf" || ui.vue === "autre" ? ui.vue : "fantasy");
   ouvrirFenetre(`
@@ -648,6 +650,7 @@ function agir(btn) {
       modifier(id, { achat: "credit", dateAchat: aujourdhui() });
       toast("1 crédit utilisé pour « " + l.titre + " ».");
       return;
+    case "commencer-lecture": modifier(id, { statut: "en_cours", dateDebut: aujourdhui() }); toast("Bonne lecture !"); return;
     case "commencer": modifier(id, { statut: "en_cours", dateDebut: aujourdhui() }); ui.filtreAudible = "en_cours"; sauverUI(); rendre(); return;
     case "terminer": modifier(id, { statut: "ecoute", dateFin: aujourdhui() }); toast("Bravo, « " + l.titre + " » est terminé."); return;
     case "gaspille": modifier(id, { gaspille: true, raison: "crédit gaspillé" }); return;

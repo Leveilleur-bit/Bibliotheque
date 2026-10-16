@@ -1,9 +1,7 @@
 {
-  "version": "22",
-  "date": "2026-10-15",
+  "version": "23",
+  "date": "2026-10-16",
   "nouveautes": [
-    "Fonds d'écran plus lumineux",
-    "Les filtres Écouté et Lu comptent les livres, comme les compteurs du haut",
-    "Essai : la salle aux crânes en fond des Envies"
+    "Livres papier : statut « En cours de lecture », affiché sur l'Accueil"
   ]
 }
