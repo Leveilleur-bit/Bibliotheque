@@ -1,7 +1,8 @@
 {
-  "version": "23",
-  "date": "2026-10-16",
+  "version": "24",
+  "date": "2026-10-17",
   "nouveautes": [
-    "Livres papier : statut « En cours de lecture », affiché sur l'Accueil"
+    "Résumé de chaque livre en ouvrant sa fiche",
+    "Séries incomplètes : « 2/6 tomes » quand il te manque des tomes"
   ]
 }

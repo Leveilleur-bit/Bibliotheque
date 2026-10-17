@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "23";   // doit correspondre à version.json
+const VERSION_APPLI = "24";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -160,13 +160,17 @@ function carteLivre(l) {
       : `<span class="pastille alerte">Non vérifié FR</span>`);
   }
   if (l.support === "envie") pastilles.push(`<span class="pastille neutre">${esc(FORMATS_ENVIE[l.formatVoulu] || FORMATS_ENVIE.indifferent)}</span>`);
-  if (tomes.length) pastilles.push(`<span class="pastille neutre">${faits}/${pluriel(tomes.length, "tome")}</span>`);
+  const totalSerie = Math.max(Number(l.tomesSerie) || 0, tomes.length);
+  const manque = totalSerie - tomes.length;
+  if (tomes.length) pastilles.push(`<span class="pastille ${manque > 0 ? "accent" : "neutre"}" title="${manque > 0 ? pluriel(manque, "tome") + " de la série ne figure" + (manque > 1 ? "nt" : "") + " pas dans ta liste" : ""}">${faits}/${pluriel(totalSerie, "tome")}</span>`);
   if (l.achat === "credit") pastilles.push(`<span class="pastille neutre">1 crédit</span>`);
   if (l.gaspille) pastilles.push(`<span class="pastille alerte">${esc(l.raison || "crédit gaspillé")}</span>`);
   if (l.rembourse) pastilles.push(`<span class="pastille ok">remboursé</span>`);
   if (l.lien) pastilles.push(`<a class="petit" href="${esc(l.lien)}" target="_blank" rel="noopener">Fiche Audible</a>`);
 
   const panneau = !ouvert ? "" : `
+    ${l.resume ? `<p class="resume">${esc(l.resume)}</p>` : ""}
+    ${manque > 0 ? `<p class="doux petit" style="margin:0">La série compte ${pluriel(totalSerie, "tome")} : il t'en manque ${manque}.</p>` : ""}
     <div class="tomes">
       ${tomes.length ? tomes.map((t, i) => `
         <div class="tome${t.ecoute ? " fait" : ""}">
@@ -528,6 +532,8 @@ function formulaireLivre({ type, l }) {
         <div class="champ"><label class="lbl" for="f-format">Comment le lire</label>
           <select id="f-format">${Object.entries(FORMATS_ENVIE).map(([k, t]) => `<option value="${k}"${(edition ? l.formatVoulu || "indifferent" : "indifferent") === k ? " selected" : ""}>${t}</option>`).join("")}</select></div>` : ""}
       ${statutChamp}
+      <div class="champ"><label class="lbl" for="f-resume">Résumé (affiché en ouvrant la fiche)</label><textarea id="f-resume">${v("resume")}</textarea></div>
+      <div class="champ"><label class="lbl" for="f-serie">Nombre de tomes de la série (vide si livre seul)</label><input id="f-serie" type="number" min="1" inputmode="numeric" value="${v("tomesSerie")}"></div>
       <div class="champ"><label class="lbl" for="f-notes">Notes</label><textarea id="f-notes">${v("notes")}</textarea></div>
       ${support === "audible" ? `
         <label class="case" for="f-verif"><input type="checkbox" id="f-verif"${edition && l.verifieFR ? " checked" : ""}><span>J'ai ouvert la fiche sur audible.fr : <strong>langue = Français</strong> et le narrateur est francophone.</span></label>` : ""}
@@ -544,7 +550,7 @@ function formulaireLivre({ type, l }) {
       const erreur = msg => { const e = dlg.querySelector("#f-erreur"); e.textContent = msg; e.hidden = false; };
       const titre = val("#f-titre");
       if (!titre) return erreur("Indique le titre.");
-      const champs = { titre, auteur: val("#f-auteur"), notes: val("#f-notes") };
+      const champs = { titre, auteur: val("#f-auteur"), notes: val("#f-notes"), resume: val("#f-resume"), tomesSerie: parseInt(val("#f-serie"), 10) || null };
       const g = val("#f-genre");
       champs.genre = g === "autre" ? "" : g;
       if (support === "audible") {
