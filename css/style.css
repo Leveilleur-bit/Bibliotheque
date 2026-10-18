@@ -317,3 +317,10 @@ body[data-fond="autre"] .genre-tete h2 { color: #f2c98a; }
 .accueil-idee { font-size: 1.1rem; }
 .barre svg { width: 22px; height: 22px; }
 .compte-cartes { margin: -2px 0 0; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
+
+/* Rangement par auteur */
+.tri { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: .9rem; margin: 2px 0 6px; }
+.tri .btn-discret[aria-pressed="true"] { color: var(--accent); text-decoration: underline; text-underline-offset: 4px; }
+.intertitre-auteur { font-family: "Cormorant Garamond", Georgia, serif; font-size: 1.25rem; font-weight: 600; color: var(--accent);
+  margin: 14px 4px 0; text-shadow: 0 1px 4px rgba(0,0,0,.9); }
+.intertitre-auteur:first-child { margin-top: 0; }

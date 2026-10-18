@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "24";   // doit correspondre à version.json
+const VERSION_APPLI = "25";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -53,11 +53,11 @@ function normaliser(d) {
 }
 
 let etat = normaliser(lireJSON(CLE_STOCKAGE));
-const ui = Object.assign({ vue: "audible", filtreAudible: "a_ecouter", filtreGenre: "tout", recherche: "" }, lireJSON(CLE_UI) || {});
+const ui = Object.assign({ vue: "audible", filtreAudible: "a_ecouter", filtreGenre: "tout", triGenre: "auteur", recherche: "" }, lireJSON(CLE_UI) || {});
 const ouverts = new Set();
 let suppressionEnAttente = null;
 
-function sauverUI() { ecrireJSON(CLE_UI, { vue: ui.vue, filtreAudible: ui.filtreAudible, filtreGenre: ui.filtreGenre }); }
+function sauverUI() { ecrireJSON(CLE_UI, { vue: ui.vue, filtreAudible: ui.filtreAudible, filtreGenre: ui.filtreGenre, triGenre: ui.triGenre }); }
 
 // À appeler après chaque changement fait par l'utilisateur
 function sauvegarder() {
@@ -417,9 +417,41 @@ function vuePropositions() {
       </details>` : ""}`;
 }
 
+// Nom de famille du premier auteur, pour ranger par auteur (« J. R. R. Tolkien » → Tolkien, « David et Leigh Eddings » → Eddings)
+const PARTICULES = ["de", "du", "des", "le", "la", "van", "von", "l'", "d'"];
+function nomAuteur(l) {
+  let a = String(l.auteur || "").split(/,|&/)[0].trim();
+  if (!a || /^(divers|collectif|auteurs divers)$/i.test(a)) return "";
+  if (/\set\s/.test(a)) a = a.split(/\set\s/).pop();
+  const mots = a.split(/\s+/);
+  let i = mots.length - 1;
+  while (i > 0 && PARTICULES.includes(mots[i - 1].toLowerCase())) i--;
+  return mots.slice(i).join(" ");
+}
+const sansParticule = nom => nom.replace(/^((de|du|des|le|la|van|von)\s+|[ld]')/i, "");
+function parAuteur(a, b) {
+  const na = nomAuteur(a), nb = nomAuteur(b);
+  if (!na !== !nb) return na ? -1 : 1;   // « Divers » et sans auteur à la fin
+  return sansParticule(na).localeCompare(sansParticule(nb), "fr", { sensitivity: "base" })
+    || String(a.auteur || "").localeCompare(String(b.auteur || ""), "fr", { sensitivity: "base" })
+    || parTitre(a, b);
+}
 function livresGenre(genre) {
   return etat.livres.filter(l => genreDe(l) === genre && categorieGenre(l)
-    && (ui.filtreGenre === "tout" || categorieGenre(l) === ui.filtreGenre) && correspond(l, ui.recherche)).sort(parTitre);
+    && (ui.filtreGenre === "tout" || categorieGenre(l) === ui.filtreGenre) && correspond(l, ui.recherche))
+    .sort(ui.triGenre === "titre" ? parTitre : parAuteur);
+}
+// Liste d'un genre : avec un intertitre par auteur quand on range par auteur
+function listeGenreHTML(livres, messageVide) {
+  if (!livres.length || ui.triGenre === "titre") return listeHTML(livres, messageVide);
+  let html = "", courant = null;
+  for (const l of livres) {
+    const nom = nomAuteur(l) ? (String(l.auteur).split(/,|&/)[0].trim()) : "Auteurs divers";
+    const cle = nomAuteur(l) || "~";
+    if (cle !== courant) { html += `<h3 class="intertitre-auteur">${esc(nom)}</h3>`; courant = cle; }
+    html += carteLivre(l);
+  }
+  return `<div class="liste">${html}</div>`;
 }
 const messageVideGenre = total => ui.recherche ? "Aucun livre ne correspond à ta recherche."
   : total ? "Rien dans ce filtre." : "Aucun livre rangé dans ce genre pour l'instant. Ajoute-en un, ou choisis le genre d'un livre avec « Modifier ».";
@@ -441,7 +473,11 @@ function vueGenre(genre) {
     <section class="section">
       ${filtresHTML(FILTRES_GENRE, ui.filtreGenre, "filtre-genre", compter)}
       <input class="recherche" id="recherche-genre" type="search" placeholder="Chercher un titre ou un auteur" value="${esc(ui.recherche)}" aria-label="Chercher dans ${GENRES[genre]}" autocomplete="off">
-      <div id="liste-genre">${listeHTML(affiches, messageVideGenre(livres.length))}</div>
+      <div class="tri" role="group" aria-label="Ranger par">Ranger par
+        <button class="btn-discret" data-act="tri-genre" data-t="auteur" aria-pressed="${ui.triGenre !== "titre"}">auteur</button>
+        <button class="btn-discret" data-act="tri-genre" data-t="titre" aria-pressed="${ui.triGenre === "titre"}">titre</button>
+      </div>
+      <div id="liste-genre">${listeGenreHTML(affiches, messageVideGenre(livres.length))}</div>
       <div class="rangee">
         <button class="btn" data-act="ajouter" data-type="papier">+ Livre papier</button>
         <button class="btn-sec" data-act="ajouter" data-type="audible">+ Livre audio</button>
@@ -627,6 +663,7 @@ function agir(btn) {
       allerA(btn.dataset.vue);
       return;
     case "filtre-genre": ui.filtreGenre = btn.dataset.f; sauverUI(); rendre(); return;
+    case "tri-genre": ui.triGenre = btn.dataset.t; sauverUI(); rendre(); return;
     case "ajouter": formulaireLivre({ type: btn.dataset.type }); return;
     case "modifier": if (l) formulaireLivre({ l }); return;
     case "credit": changerSolde(+btn.dataset.d); sauvegarder(); return;
@@ -746,7 +783,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (ev.target.id !== "recherche-genre") return;
     ui.recherche = ev.target.value;
     const total = etat.livres.filter(l => genreDe(l) === ui.vue && categorieGenre(l)).length;
-    $("#liste-genre").innerHTML = listeHTML(livresGenre(ui.vue), messageVideGenre(total));
+    $("#liste-genre").innerHTML = listeGenreHTML(livresGenre(ui.vue), messageVideGenre(total));
   });
   vue.addEventListener("change", ev => {
     if (ev.target.id === "import-fichier" && ev.target.files[0]) importer(ev.target.files[0]);

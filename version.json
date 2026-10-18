@@ -1,8 +1,7 @@
 {
-  "version": "24",
-  "date": "2026-10-17",
+  "version": "25",
+  "date": "2026-10-18",
   "nouveautes": [
-    "Résumé de chaque livre en ouvrant sa fiche",
-    "Séries incomplètes : « 2/6 tomes » quand il te manque des tomes"
+    "Fantasy, SF et Autres rangés par auteur, avec le nom en intertitre (ou par titre, au choix)"
   ]
 }
