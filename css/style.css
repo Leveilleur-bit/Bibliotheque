@@ -324,3 +324,8 @@ body[data-fond="autre"] .genre-tete h2 { color: #f2c98a; }
 .intertitre-auteur { font-family: "Cormorant Garamond", Georgia, serif; font-size: 1.25rem; font-weight: 600; color: var(--accent);
   margin: 14px 4px 0; text-shadow: 0 1px 4px rgba(0,0,0,.9); }
 .intertitre-auteur:first-child { margin-top: 0; }
+
+/* Idées : compléter une série */
+.progression { height: 6px; border-radius: 3px; background: rgba(255,255,255,.14); overflow: hidden; }
+.progression span { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.serie-a-completer .livre-titre { display: block; }

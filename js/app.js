@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "25";   // doit correspondre à version.json
+const VERSION_APPLI = "26";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -53,11 +53,11 @@ function normaliser(d) {
 }
 
 let etat = normaliser(lireJSON(CLE_STOCKAGE));
-const ui = Object.assign({ vue: "audible", filtreAudible: "a_ecouter", filtreGenre: "tout", triGenre: "auteur", recherche: "" }, lireJSON(CLE_UI) || {});
+const ui = Object.assign({ vue: "audible", filtreAudible: "a_ecouter", filtreGenre: "tout", triGenre: "auteur", ongletIdees: "nouveau", recherche: "" }, lireJSON(CLE_UI) || {});
 const ouverts = new Set();
 let suppressionEnAttente = null;
 
-function sauverUI() { ecrireJSON(CLE_UI, { vue: ui.vue, filtreAudible: ui.filtreAudible, filtreGenre: ui.filtreGenre, triGenre: ui.triGenre }); }
+function sauverUI() { ecrireJSON(CLE_UI, { vue: ui.vue, filtreAudible: ui.filtreAudible, filtreGenre: ui.filtreGenre, triGenre: ui.triGenre, ongletIdees: ui.ongletIdees }); }
 
 // À appeler après chaque changement fait par l'utilisateur
 function sauvegarder() {
@@ -404,10 +404,44 @@ function vueEnvies() {
     <div><button class="btn" data-act="ajouter" data-type="envie">+ Noter une envie</button></div>`;
 }
 
+// Séries dont il manque des tomes (le total de la série est connu et dépasse les tomes listés)
+function seriesACompleter() {
+  return etat.livres.filter(l => (l.support === "papier" || l.support === "audible")
+    && !["propose", "refuse", "archive"].includes(l.statut)
+    && (Number(l.tomesSerie) || 0) > (Array.isArray(l.tomes) ? l.tomes.length : 0))
+    .sort((a, b) => parAuteur(a, b));
+}
+
+function carteSerieHTML(l) {
+  const n = (l.tomes || []).length, total = Number(l.tomesSerie);
+  const manquants = Array.isArray(l.tomesManquants) && l.tomesManquants.length ? l.tomesManquants : null;
+  const support = l.support === "papier" ? "Papier" : "Audio";
+  return `
+    <article class="livre serie-a-completer">
+      <div><span class="livre-titre">${esc(l.titre)}</span>${l.auteur ? `<span class="livre-meta">${esc(l.auteur)}</span>` : ""}</div>
+      <div class="rangee"><span class="pastille support">${support}</span><span class="pastille accent">${n}/${pluriel(total, "tome")}</span></div>
+      <div class="progression" role="img" aria-label="${n} tomes sur ${total}"><span style="width:${Math.round(n / total * 100)}%"></span></div>
+      <p class="livre-notes">${manquants
+        ? `Il te manque : ${manquants.map(t => `<i>${esc(t)}</i>`).join(", ")}.`
+        : `Il te manque ${total - n === 1 ? "le tome " + total : "les tomes " + (n + 1) + (total - n === 2 ? " et " : " à ") + total}.`}</p>
+      <div class="rangee"><button class="btn-sec" data-act="voir-fiche" data-id="${esc(l.id)}">Voir la fiche</button></div>
+    </article>`;
+}
+
+const ONGLETS_IDEES = [["nouveau", "Nouveautés"], ["series", "Compléter une série"]];
+
 function vuePropositions() {
   const props = etat.livres.filter(l => l.statut === "propose").sort((a, b) => (a.rang ?? 99) - (b.rang ?? 99));
   const refusees = etat.livres.filter(l => l.statut === "refuse").sort(parMaj);
+  const series = seriesACompleter();
+  const compter = k => k === "series" ? series.length : props.length;
+  const onglets = filtresHTML(ONGLETS_IDEES, ui.ongletIdees, "onglet-idees", compter);
+  if (ui.ongletIdees === "series") return `
+    ${onglets}
+    <p class="intro">Les séries que tu as commencées et dont il te manque des tomes. Le total n'est indiqué que pour les séries dont Claude est sûr ; tu peux le renseigner toi-même dans « Modifier ».</p>
+    ${series.length ? `<div class="liste">${series.map(carteSerieHTML).join("")}</div>` : `<div class="vide">Aucune série incomplète repérée.</div>`}`;
   return `
+    ${onglets}
     <p class="intro">Les idées de Claude pour ta prochaine écoute, classées. La langue française se confirme sur la fiche audible.fr avant de valider.</p>
     ${listeHTML(props, "Aucune proposition en attente. Demande à Claude ta prochaine écoute : il ajoutera ses idées ici.")}
     ${refusees.length ? `
@@ -663,6 +697,14 @@ function agir(btn) {
       allerA(btn.dataset.vue);
       return;
     case "filtre-genre": ui.filtreGenre = btn.dataset.f; sauverUI(); rendre(); return;
+    case "onglet-idees": ui.ongletIdees = btn.dataset.f; sauverUI(); rendre(); return;
+    case "voir-fiche":
+      if (!l) return;
+      ui.filtreGenre = "tout";
+      ouverts.add(l.id);
+      allerA(genreDe(l));
+      ui.recherche = l.titre; rendre();
+      return;
     case "tri-genre": ui.triGenre = btn.dataset.t; sauverUI(); rendre(); return;
     case "ajouter": formulaireLivre({ type: btn.dataset.type }); return;
     case "modifier": if (l) formulaireLivre({ l }); return;
