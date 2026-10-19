@@ -1,7 +1,9 @@
 {
-  "version": "26",
-  "date": "2026-10-18",
+  "version": "27",
+  "date": "2026-10-19",
   "nouveautes": [
-    "Idées : onglet « Compléter une série » avec les tomes qui te manquent"
+    "Fiches allégées : les notes de suivi passent dans la fiche ouverte",
+    "Compléter une série : bouton « J'ai… » pour ajouter le tome acheté",
+    "Accueil : notation rapide des lectures sans note"
   ]
 }

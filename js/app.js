@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "26";   // doit correspondre à version.json
+const VERSION_APPLI = "27";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -168,8 +168,10 @@ function carteLivre(l) {
   if (l.rembourse) pastilles.push(`<span class="pastille ok">remboursé</span>`);
   if (l.lien) pastilles.push(`<a class="petit" href="${esc(l.lien)}" target="_blank" rel="noopener">Fiche Audible</a>`);
 
+  const noteVisible = l.statut === "propose" || l.statut === "refuse" || l.support === "envie";
   const panneau = !ouvert ? "" : `
     ${l.resume ? `<p class="resume">${esc(l.resume)}</p>` : ""}
+    ${l.notes && !noteVisible ? `<p class="livre-notes">${esc(l.notes)}</p>` : ""}
     ${manque > 0 ? `<p class="doux petit" style="margin:0">La série compte ${pluriel(totalSerie, "tome")} : il t'en manque ${manque}.</p>` : ""}
     <div class="tomes">
       ${tomes.length ? tomes.map((t, i) => `
@@ -203,7 +205,7 @@ function carteLivre(l) {
       </button>
       ${pastilles.length ? `<div class="rangee">${pastilles.join("")}</div>` : ""}
       ${noteSiteHTML(l)}
-      ${l.notes ? `<p class="livre-notes">${esc(l.notes)}</p>` : ""}
+      ${l.notes && noteVisible ? `<p class="livre-notes">${esc(l.notes)}</p>` : ""}
       ${panneau}
       ${etoiles}
       <div class="rangee">${actionsLivre(l)}<button class="btn-discret" data-act="modifier" data-id="${esc(l.id)}">Modifier</button>${suppr}</div>
@@ -379,6 +381,15 @@ function vueAccueil() {
       ${noteSiteHTML(idee)}
     </section>` : ""}
 
+    ${aNoter().length ? `
+    <section class="carte accueil-bloc">
+      <div class="section-titre"><h2>Tes notes</h2></div>
+      <button class="accueil-ligne lien-ligne" data-act="noter-rapide">
+        <span class="accueil-nb">${aNoter().length}</span>
+        <div><b>lectures sans note</b><div class="doux petit">Note-les une par une en quelques secondes : Claude s'en sert pour mieux te conseiller.</div></div>
+      </button>
+    </section>` : ""}
+
     <section class="carte accueil-bloc">
       <div class="section-titre"><h2>Ce qui t'attend</h2></div>
       <button class="accueil-ligne lien-ligne" data-act="aller" data-vue="audible" data-filtre="a_ecouter">
@@ -394,6 +405,48 @@ function vueAccueil() {
         <div><b>envie${envies.length > 1 ? "s" : ""} notée${envies.length > 1 ? "s" : ""}</b>${envies.length ? `<div class="doux petit">${titres(envies)}</div>` : `<div class="doux petit">Note les livres qu'on te conseille.</div>`}</div>
       </button>
     </section>`;
+}
+
+/* ---------- Notation rapide : une lecture à la fois ---------- */
+const aNoter = () => etat.livres.filter(l => (l.statut === "lu" || l.statut === "ecoute") && !l.note).sort(parAuteur);
+
+function noterRapide() {
+  const passes = new Set();
+  let notes = 0;
+  const suivant = () => {
+    const reste = aNoter().filter(l => !passes.has(l.id));
+    const l = reste[0];
+    if (!l) {
+      ouvrirFenetre(`<h2>Terminé</h2><p>${notes ? `${pluriel(notes, "lecture")} notée${notes > 1 ? "s" : ""}. ` : ""}${passes.size ? `${pluriel(passes.size, "lecture")} passée${passes.size > 1 ? "s" : ""}, tu pourras y revenir.` : "Toutes tes lectures ont une note."}</p>
+        <div class="actions"><button class="btn" id="nr-fin">Fermer</button></div>`, dlg => dlg.querySelector("#nr-fin").addEventListener("click", fermerFenetre));
+      return;
+    }
+    const sup = l.support === "papier" ? "Papier" : "Audio";
+    ouvrirFenetre(`
+      <div class="nr-tete"><span class="doux petit">${pluriel(reste.length, "lecture")} sans note${notes ? ` · ${notes} notée${notes > 1 ? "s" : ""}` : ""}</span>
+        <button class="btn-discret" id="nr-fermer" aria-label="Fermer">✕</button></div>
+      <div>
+        <h2 class="nr-titre">${esc(l.titre)}</h2>
+        <div class="doux">${esc(l.auteur || "")}${l.auteur ? " · " : ""}${sup}${(l.tomes || []).length > 1 ? ` · ${pluriel(l.tomes.length, "tome")}` : ""}</div>
+      </div>
+      ${l.resume ? `<p class="resume nr-resume">${esc(l.resume)}</p>` : ""}
+      <div class="nr-etoiles" role="group" aria-label="Ta note">
+        ${[1, 2, 3, 4, 5].map(n => `<button data-n="${n}" aria-label="${n} sur 5">★</button>`).join("")}
+      </div>
+      <div class="nr-legende doux petit"><span>bof</span><span>coup de cœur</span></div>
+      <div class="actions"><button class="btn-sec" id="nr-passer">Passer</button></div>`, dlg => {
+      dlg.querySelector("#nr-fermer").addEventListener("click", fermerFenetre);
+      dlg.querySelector("#nr-passer").addEventListener("click", () => { passes.add(l.id); suivant(); });
+      const etoiles = [...dlg.querySelectorAll(".nr-etoiles button")];
+      etoiles.forEach(b => b.addEventListener("click", () => {
+        const n = +b.dataset.n;
+        etoiles.forEach(e => e.classList.toggle("on", +e.dataset.n <= n));
+        notes++;
+        setTimeout(() => { modifier(l.id, { note: n }); suivant(); }, 250);
+      }));
+    });
+  };
+  suivant();
 }
 
 function vueEnvies() {
@@ -424,7 +477,10 @@ function carteSerieHTML(l) {
       <p class="livre-notes">${manquants
         ? `Il te manque : ${manquants.map(t => `<i>${esc(t)}</i>`).join(", ")}.`
         : `Il te manque ${total - n === 1 ? "le tome " + total : "les tomes " + (n + 1) + (total - n === 2 ? " et " : " à ") + total}.`}</p>
-      <div class="rangee"><button class="btn-sec" data-act="voir-fiche" data-id="${esc(l.id)}">Voir la fiche</button></div>
+      <div class="rangee">
+        <button class="btn" data-act="tome-acquis" data-id="${esc(l.id)}">J'ai ${manquants ? "« " + esc(manquants[0]) + " »" : "le tome " + (n + 1)}</button>
+        <button class="btn-discret" data-act="voir-fiche" data-id="${esc(l.id)}">Voir la fiche</button>
+      </div>
     </article>`;
 }
 
@@ -698,6 +754,15 @@ function agir(btn) {
       return;
     case "filtre-genre": ui.filtreGenre = btn.dataset.f; sauverUI(); rendre(); return;
     case "onglet-idees": ui.ongletIdees = btn.dataset.f; sauverUI(); rendre(); return;
+    case "tome-acquis": {
+      if (!l) return;
+      const manq = Array.isArray(l.tomesManquants) ? [...l.tomesManquants] : [];
+      const titreTome = manq.length ? manq.shift() : "Tome " + ((l.tomes || []).length + 1);
+      modifier(id, { tomes: [...(l.tomes || []), { titre: titreTome, ecoute: false }], tomesManquants: manq });
+      toast(`« ${titreTome} » ajouté à la série.`);
+      return;
+    }
+    case "noter-rapide": noterRapide(); return;
     case "voir-fiche":
       if (!l) return;
       ui.filtreGenre = "tout";

@@ -329,3 +329,13 @@ body[data-fond="autre"] .genre-tete h2 { color: #f2c98a; }
 .progression { height: 6px; border-radius: 3px; background: rgba(255,255,255,.14); overflow: hidden; }
 .progression span { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
 .serie-a-completer .livre-titre { display: block; }
+
+/* Notation rapide */
+.nr-tete { display: flex; justify-content: space-between; align-items: center; }
+.nr-titre { font-size: 1.5rem; margin: 0; }
+.nr-resume { color: var(--fg); opacity: .9; text-shadow: none; }
+.nr-etoiles { display: flex; justify-content: center; gap: 6px; margin-top: 4px; }
+.nr-etoiles button { font-size: 2.6rem; line-height: 1; background: none; border: 0; color: rgba(255,255,255,.22); cursor: pointer; padding: 4px; }
+.nr-etoiles button.on { color: var(--accent); }
+@media (hover: hover) { .nr-etoiles:hover button { color: var(--accent); } .nr-etoiles button:hover ~ button { color: rgba(255,255,255,.22); } }
+.nr-legende { display: flex; justify-content: space-between; padding: 0 10px; }
