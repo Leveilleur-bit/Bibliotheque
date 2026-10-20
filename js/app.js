@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "28";   // doit correspondre à version.json
+const VERSION_APPLI = "29";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 

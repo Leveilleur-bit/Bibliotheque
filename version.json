@@ -1,9 +1,7 @@
 {
-  "version": "28",
+  "version": "29",
   "date": "2026-10-20",
   "nouveautes": [
-    "Couvertures des livres (trouvées automatiquement, ou couverture maison)",
-    "Vue étagère : tes livres en tranches sur des planches de bois",
-    "Ambiance : titres en lettres de livre, fleurons, grain de papier"
+    "Couvertures : éditions françaises seulement, et le premier tome pour une série"
   ]
 }

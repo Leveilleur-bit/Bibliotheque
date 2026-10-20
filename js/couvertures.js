@@ -6,7 +6,8 @@
    - tranches de livres pour la vue étagère
    ============================================================ */
 
-const CLE_COUV = "maBibliothequeCouv";
+const CLE_COUV = "maBibliothequeCouv2";   // v2 : éditions françaises seulement (la v1 prenait parfois des éditions étrangères)
+try { localStorage.removeItem("maBibliothequeCouv"); } catch { /* rien */ }
 const COUV_REESSAI_JOURS = 30;          // un livre sans couverture est recherché à nouveau après 30 jours
 let cacheCouv = (() => { try { return JSON.parse(localStorage.getItem(CLE_COUV)) || {}; } catch { return {}; } })();
 const sauverCacheCouv = () => { try { localStorage.setItem(CLE_COUV, JSON.stringify(cacheCouv)); } catch { /* mémoire pleine : tant pis */ } };
@@ -34,8 +35,9 @@ function titresRecherche(l) {
   const tomes = Array.isArray(l.tomes) ? l.tomes : [];
   const titreSeul = net(l.titre);
   const titreGenerique = /\(romans\)/i.test(l.titre) || sansAccents(titreSeul) === sansAccents(l.auteur);
+  // pour une série, la couverture du premier tome ; sinon le titre du livre
+  if (tomes[0] && (tomes.length > 1 || titreGenerique)) t.push(net(tomes[0].titre).replace(/^.*?\s:\s/, ""));
   if (!titreGenerique) t.push(titreSeul.split(/\s[–—:]\s/)[0]);
-  if (tomes[0]) t.push(net(tomes[0].titre).replace(/^.*?\s:\s/, ""));
   if (!titreGenerique && /\s[–—:]\s/.test(titreSeul)) t.push(titreSeul.split(/\s[–—:]\s/).pop());
   return [...new Set(t.filter(Boolean))];
 }
@@ -46,28 +48,35 @@ function auteurCorrespond(auteursTrouves, l) {
   return (auteursTrouves || []).some(a => sansAccents(a).includes(nom.split(" ").pop()));
 }
 
+// Le titre trouvé doit ressembler au titre cherché (évite de prendre un autre livre du même auteur)
+function titreCorrespond(trouve, cherche) {
+  const a = sansAccents(trouve).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  const b = sansAccents(cherche).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  return !!a && !!b && (a.includes(b) || b.includes(a));
+}
+
 async function chercherGoogle(titre, l) {
   const nom = typeof nomAuteur === "function" ? nomAuteur(l) : "";
   const q = `intitle:${titre}` + (nom ? ` inauthor:${nom}` : "");
-  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&langRestrict=fr&maxResults=5&printType=books&fields=items(volumeInfo(title,authors,imageLinks))`;
+  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&langRestrict=fr&maxResults=10&printType=books&fields=items(volumeInfo(title,authors,language,imageLinks))`;
   const r = await fetch(url);
   if (!r.ok) throw new Error("google " + r.status);
   const j = await r.json();
   for (const it of j.items || []) {
     const v = it.volumeInfo || {};
     const img = v.imageLinks && (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail);
-    if (img && auteurCorrespond(v.authors, l)) return img.replace(/^http:/, "https:").replace("&edge=curl", "");
+    if (img && v.language === "fr" && titreCorrespond(v.title, titre) && auteurCorrespond(v.authors, l)) return img.replace(/^http:/, "https:").replace("&edge=curl", "");
   }
   return "";
 }
 
 async function chercherOpenLibrary(titre, l) {
   const nom = typeof nomAuteur === "function" ? nomAuteur(l) : "";
-  const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(titre)}${nom ? "&author=" + encodeURIComponent(nom) : ""}&limit=5&fields=cover_i,author_name`;
+  const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(titre)}${nom ? "&author=" + encodeURIComponent(nom) : ""}&language=fre&limit=5&fields=cover_i,author_name,title`;
   const r = await fetch(url);
   if (!r.ok) throw new Error("openlibrary " + r.status);
   const j = await r.json();
-  const d = (j.docs || []).find(x => x.cover_i && auteurCorrespond(x.author_name, l));
+  const d = (j.docs || []).find(x => x.cover_i && titreCorrespond(x.title, titre) && auteurCorrespond(x.author_name, l));
   return d ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : "";
 }
 
