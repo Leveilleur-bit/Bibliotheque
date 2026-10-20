@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "27";   // doit correspondre à version.json
+const VERSION_APPLI = "28";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -53,11 +53,11 @@ function normaliser(d) {
 }
 
 let etat = normaliser(lireJSON(CLE_STOCKAGE));
-const ui = Object.assign({ vue: "audible", filtreAudible: "a_ecouter", filtreGenre: "tout", triGenre: "auteur", ongletIdees: "nouveau", recherche: "" }, lireJSON(CLE_UI) || {});
+const ui = Object.assign({ vue: "audible", filtreAudible: "a_ecouter", filtreGenre: "tout", triGenre: "auteur", ongletIdees: "nouveau", affichageGenre: "liste", recherche: "" }, lireJSON(CLE_UI) || {});
 const ouverts = new Set();
 let suppressionEnAttente = null;
 
-function sauverUI() { ecrireJSON(CLE_UI, { vue: ui.vue, filtreAudible: ui.filtreAudible, filtreGenre: ui.filtreGenre, triGenre: ui.triGenre, ongletIdees: ui.ongletIdees }); }
+function sauverUI() { ecrireJSON(CLE_UI, { vue: ui.vue, filtreAudible: ui.filtreAudible, filtreGenre: ui.filtreGenre, triGenre: ui.triGenre, ongletIdees: ui.ongletIdees, affichageGenre: ui.affichageGenre }); }
 
 // À appeler après chaque changement fait par l'utilisateur
 function sauvegarder() {
@@ -200,6 +200,7 @@ function carteLivre(l) {
   return `
     <article class="livre">
       <button class="livre-tete" data-act="ouvrir" data-id="${esc(l.id)}" aria-expanded="${ouvert}">
+        ${couvertureHTML(l)}
         <span><span class="livre-titre">${esc(l.titre)}</span>${meta ? `<span class="livre-meta">${meta}</span>` : ""}</span>
         <span class="chevron" aria-hidden="true">▶</span>
       </button>
@@ -471,7 +472,7 @@ function carteSerieHTML(l) {
   const support = l.support === "papier" ? "Papier" : "Audio";
   return `
     <article class="livre serie-a-completer">
-      <div><span class="livre-titre">${esc(l.titre)}</span>${l.auteur ? `<span class="livre-meta">${esc(l.auteur)}</span>` : ""}</div>
+      <div class="serie-tete">${couvertureHTML(l)}<div><span class="livre-titre">${esc(l.titre)}</span>${l.auteur ? `<span class="livre-meta">${esc(l.auteur)}</span>` : ""}</div></div>
       <div class="rangee"><span class="pastille support">${support}</span><span class="pastille accent">${n}/${pluriel(total, "tome")}</span></div>
       <div class="progression" role="img" aria-label="${n} tomes sur ${total}"><span style="width:${Math.round(n / total * 100)}%"></span></div>
       <p class="livre-notes">${manquants
@@ -533,6 +534,7 @@ function livresGenre(genre) {
 }
 // Liste d'un genre : avec un intertitre par auteur quand on range par auteur
 function listeGenreHTML(livres, messageVide) {
+  if (ui.affichageGenre === "etagere") return etagereHTML(livres, messageVide);
   if (!livres.length || ui.triGenre === "titre") return listeHTML(livres, messageVide);
   let html = "", courant = null;
   for (const l of livres) {
@@ -563,6 +565,10 @@ function vueGenre(genre) {
     <section class="section">
       ${filtresHTML(FILTRES_GENRE, ui.filtreGenre, "filtre-genre", compter)}
       <input class="recherche" id="recherche-genre" type="search" placeholder="Chercher un titre ou un auteur" value="${esc(ui.recherche)}" aria-label="Chercher dans ${GENRES[genre]}" autocomplete="off">
+      <div class="tri" role="group" aria-label="Affichage">Afficher en
+        <button class="btn-discret" data-act="affichage-genre" data-a="liste" aria-pressed="${ui.affichageGenre !== "etagere"}">liste</button>
+        <button class="btn-discret" data-act="affichage-genre" data-a="etagere" aria-pressed="${ui.affichageGenre === "etagere"}">étagère</button>
+      </div>
       <div class="tri" role="group" aria-label="Ranger par">Ranger par
         <button class="btn-discret" data-act="tri-genre" data-t="auteur" aria-pressed="${ui.triGenre !== "titre"}">auteur</button>
         <button class="btn-discret" data-act="tri-genre" data-t="titre" aria-pressed="${ui.triGenre === "titre"}">titre</button>
@@ -598,6 +604,7 @@ function rendre() {
   const vue = $("#vue");
   const vues = { accueil: vueAccueil, audible: vueAudible, fantasy: () => vueGenre("fantasy"), sf: () => vueGenre("sf"), autre: () => vueGenre("autre"), envies: vueEnvies, propositions: vuePropositions, reglages: vueReglages };
   vue.innerHTML = (vues[ui.vue] || vueAccueil)();
+  chargerCouvertures(vue);
   const genre = ["fantasy", "sf", "autre"].includes(ui.vue) ? ui.vue : null;
   // Fond d'ambiance : chaque onglet a le sien
   document.body.dataset.fond = genre || { accueil: "accueil", envies: "envies", propositions: "idees", reglages: "reglages" }[ui.vue] || "audible";
@@ -658,6 +665,7 @@ function formulaireLivre({ type, l }) {
         <div class="champ"><label class="lbl" for="f-format">Comment le lire</label>
           <select id="f-format">${Object.entries(FORMATS_ENVIE).map(([k, t]) => `<option value="${k}"${(edition ? l.formatVoulu || "indifferent" : "indifferent") === k ? " selected" : ""}>${t}</option>`).join("")}</select></div>` : ""}
       ${statutChamp}
+      <div class="champ"><label class="lbl" for="f-couv">Couverture (lien d'une image, si celle trouvée est fausse)</label><input id="f-couv" inputmode="url" value="${v("couverture")}" placeholder="https://…" autocomplete="off"></div>
       <div class="champ"><label class="lbl" for="f-resume">Résumé (affiché en ouvrant la fiche)</label><textarea id="f-resume">${v("resume")}</textarea></div>
       <div class="champ"><label class="lbl" for="f-serie">Nombre de tomes de la série (vide si livre seul)</label><input id="f-serie" type="number" min="1" inputmode="numeric" value="${v("tomesSerie")}"></div>
       <div class="champ"><label class="lbl" for="f-notes">Notes</label><textarea id="f-notes">${v("notes")}</textarea></div>
@@ -676,7 +684,7 @@ function formulaireLivre({ type, l }) {
       const erreur = msg => { const e = dlg.querySelector("#f-erreur"); e.textContent = msg; e.hidden = false; };
       const titre = val("#f-titre");
       if (!titre) return erreur("Indique le titre.");
-      const champs = { titre, auteur: val("#f-auteur"), notes: val("#f-notes"), resume: val("#f-resume"), tomesSerie: parseInt(val("#f-serie"), 10) || null };
+      const champs = { titre, auteur: val("#f-auteur"), notes: val("#f-notes"), resume: val("#f-resume"), couverture: val("#f-couv"), tomesSerie: parseInt(val("#f-serie"), 10) || null };
       const g = val("#f-genre");
       champs.genre = g === "autre" ? "" : g;
       if (support === "audible") {
@@ -766,10 +774,12 @@ function agir(btn) {
     case "voir-fiche":
       if (!l) return;
       ui.filtreGenre = "tout";
+      ui.affichageGenre = "liste";
       ouverts.add(l.id);
       allerA(genreDe(l));
       ui.recherche = l.titre; rendre();
       return;
+    case "affichage-genre": ui.affichageGenre = btn.dataset.a; sauverUI(); rendre(); return;
     case "tri-genre": ui.triGenre = btn.dataset.t; sauverUI(); rendre(); return;
     case "ajouter": formulaireLivre({ type: btn.dataset.type }); return;
     case "modifier": if (l) formulaireLivre({ l }); return;
@@ -891,6 +901,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ui.recherche = ev.target.value;
     const total = etat.livres.filter(l => genreDe(l) === ui.vue && categorieGenre(l)).length;
     $("#liste-genre").innerHTML = listeGenreHTML(livresGenre(ui.vue), messageVideGenre(total));
+    chargerCouvertures($("#liste-genre"));
   });
   vue.addEventListener("change", ev => {
     if (ev.target.id === "import-fichier" && ev.target.files[0]) importer(ev.target.files[0]);

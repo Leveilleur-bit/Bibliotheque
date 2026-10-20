@@ -4,11 +4,11 @@
    Fichiers de l'appli : cache d'abord, rafraîchis en arrière-plan.
    Incrémente CACHE_VERSION à chaque changement des fichiers.
    ============================================================ */
-const CACHE_VERSION = "v27";
+const CACHE_VERSION = "v28";
 const CACHE_NAME = "ma-bibliotheque-" + CACHE_VERSION;
 const FICHIERS = [
   "./", "./index.html", "./manifest.json", "./css/style.css",
-  "./js/app.js", "./js/sync.js", "./icon-192.png", "./icon-512.png", "./img/accueil.jpg", "./img/audible.jpg", "./img/autres.jpg", "./img/envies.jpg", "./img/idees.jpg", "./img/reglages.jpg", "./img/fantasy.jpg", "./img/sf.jpg"
+  "./js/app.js", "./js/sync.js", "./js/couvertures.js", "./icon-192.png", "./icon-512.png", "./img/accueil.jpg", "./img/audible.jpg", "./img/autres.jpg", "./img/envies.jpg", "./img/idees.jpg", "./img/reglages.jpg", "./img/fantasy.jpg", "./img/sf.jpg"
 ];
 
 self.addEventListener("install", event => {
@@ -30,6 +30,15 @@ self.addEventListener("fetch", event => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.hostname === "api.github.com") return;            // synchronisation : jamais en cache
+  if (url.hostname === "www.googleapis.com" || url.pathname === "/search.json") return;   // recherche de couvertures : réseau seul
+  // images de couverture : cache à part, gardé d'une version à l'autre
+  if (req.destination === "image" && url.origin !== self.location.origin) {
+    event.respondWith(caches.open("couvertures-v1").then(c => c.match(req).then(enCache => enCache || fetch(req).then(rep => {
+      if (rep && (rep.ok || rep.type === "opaque")) c.put(req, rep.clone());
+      return rep;
+    }))));
+    return;
+  }
   if (url.origin === self.location.origin && url.pathname.endsWith("/version.json")) return;
   if (url.origin === self.location.origin) {
     event.respondWith(caches.match(req).then(enCache => {

@@ -120,11 +120,11 @@ h2 { font-size: 1.4rem; font-weight: 700; }
   padding: 12px 14px; display: grid; gap: 8px; min-width: 0;
 }
 .livre-tete {
-  all: unset; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 8px;
+  all: unset; cursor: pointer; display: grid; grid-template-columns: auto 1fr auto; gap: 12px;
   align-items: start; width: 100%; box-sizing: border-box;
 }
 .livre-tete:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
-.livre-titre { display: block; font-weight: 700; font-size: 1.02rem; }
+.livre-titre { display: block; font-family: var(--display); font-weight: 700; font-size: 1.32rem; line-height: 1.12; letter-spacing: .005em; }
 .livre-meta { display: block; color: var(--muted); font-size: .88rem; overflow-wrap: anywhere; }
 .chevron { color: var(--muted); padding-top: 2px; transition: transform .15s; }
 .livre-tete[aria-expanded="true"] .chevron { transform: rotate(90deg); }
@@ -339,3 +339,55 @@ body[data-fond="autre"] .genre-tete h2 { color: #f2c98a; }
 .nr-etoiles button.on { color: var(--accent); }
 @media (hover: hover) { .nr-etoiles:hover button { color: var(--accent); } .nr-etoiles button:hover ~ button { color: rgba(255,255,255,.22); } }
 .nr-legende { display: flex; justify-content: space-between; padding: 0 10px; }
+
+/* ---------- Couvertures ---------- */
+.couv { position: relative; display: block; width: 56px; height: 84px; border-radius: 3px 5px 5px 3px; overflow: hidden; flex: none;
+  box-shadow: 0 6px 14px rgba(0,0,0,.55), inset 3px 0 0 rgba(255,255,255,.08); background: #222; }
+.couv img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+.couv::after { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: linear-gradient(90deg, rgba(0,0,0,.35) 0 3px, rgba(255,255,255,.10) 3px 5px, transparent 9px); }
+.couv-maison { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 7px 5px 6px 8px;
+  background: linear-gradient(160deg, var(--c1), var(--c2)); text-shadow: none; }
+.couv-maison::before { content: ""; position: absolute; inset: 4px 3px 4px 6px; border: 1px solid rgba(217,181,106,.45); border-radius: 2px; }
+.couv-titre { font-family: var(--display); font-weight: 700; font-size: .62rem; line-height: 1.05; color: #f3dfaf;
+  display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: break-word; hyphens: auto; }
+.couv-auteur { font-size: .5rem; color: rgba(243,223,175,.75); text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.serie-tete { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; }
+
+/* ---------- Étagère ---------- */
+.etagere {
+  --planche: 14px; --rang: 176px;
+  display: flex; flex-wrap: wrap; align-items: flex-end; align-content: flex-start; gap: 0 2px;
+  padding: 10px 10px 0; border-radius: 10px;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 calc(var(--rang) - var(--planche)),
+      #5a3a22 calc(var(--rang) - var(--planche)), #7a5233 calc(var(--rang) - var(--planche) + 3px),
+      #4a2e1a calc(var(--rang) - 2px), rgba(0,0,0,.6) var(--rang)),
+    linear-gradient(rgba(20,12,8,.55), rgba(20,12,8,.7));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), inset 0 10px 30px rgba(0,0,0,.5);
+}
+.tranche {
+  all: unset; cursor: pointer; box-sizing: border-box; position: relative;
+  height: var(--h); width: var(--w); margin-top: calc(var(--rang) - var(--planche) - var(--h)); margin-bottom: var(--planche);
+  background: linear-gradient(90deg, rgba(0,0,0,.35), transparent 30%, rgba(255,255,255,.10) 55%, transparent 70%, rgba(0,0,0,.4)), linear-gradient(var(--c1), var(--c2));
+  border-radius: 2px 2px 1px 1px;
+  box-shadow: inset 0 9px 0 -6px rgba(217,181,106,.55), inset 0 -9px 0 -6px rgba(217,181,106,.55), 1px 0 2px rgba(0,0,0,.5);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.tranche span { writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--display); font-weight: 700; font-size: .72rem; color: #f0dcaa;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-height: calc(var(--h) - 22px); text-shadow: 0 1px 1px rgba(0,0,0,.6); }
+.tranche-avenir { filter: saturate(.5) brightness(1.5); }
+.tranche-audio::before { content: ""; position: absolute; left: 50%; bottom: 8px; width: 60%; height: 2px; transform: translateX(-50%); background: rgba(240,220,170,.7); border-radius: 1px; }
+.tranche:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+@media (hover: hover) { .tranche:hover { transform: translateY(-6px); transition: transform .12s; } }
+.serre-livres { width: 10px; height: 36px; align-self: flex-end; margin-bottom: var(--planche); }
+.legende-etagere { margin: 6px 2px 0; }
+
+/* ---------- Ambiance : fleurons et grain de papier ---------- */
+.intertitre-auteur::after { content: " ❧"; font-size: .9em; opacity: .7; }
+.accueil-bloc .section-titre h2 { font-family: var(--display); }
+.livre { position: relative; }
+.livre::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: .07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .95 0 0 0 0 .85 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"); }
+.livre > * { position: relative; }
+.liste + .rangee, .section > .rangee { margin-top: 4px; }

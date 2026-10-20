@@ -1,9 +1,9 @@
 {
-  "version": "27",
-  "date": "2026-10-19",
+  "version": "28",
+  "date": "2026-10-20",
   "nouveautes": [
-    "Fiches allégées : les notes de suivi passent dans la fiche ouverte",
-    "Compléter une série : bouton « J'ai… » pour ajouter le tome acheté",
-    "Accueil : notation rapide des lectures sans note"
+    "Couvertures des livres (trouvées automatiquement, ou couverture maison)",
+    "Vue étagère : tes livres en tranches sur des planches de bois",
+    "Ambiance : titres en lettres de livre, fleurons, grain de papier"
   ]
 }
