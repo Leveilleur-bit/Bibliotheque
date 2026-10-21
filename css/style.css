@@ -408,14 +408,15 @@ body[data-fond="autre"] .genre-tete h2 { color: #f2c98a; }
 .monogramme span { font-family: var(--display); font-size: 2.2rem; font-weight: 700; color: var(--accent); letter-spacing: .02em; font-style: italic; }
 .auteur-nom { font-size: 2.1rem; color: #f3e2b8; margin: 4px 0 0; text-shadow: 0 2px 10px rgba(0,0,0,.8); }
 .auteur-favori { font-family: var(--display); font-style: italic; color: var(--accent); font-size: 1.05rem; }
-.auteur-ligne { margin: 2px 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 8px; color: var(--muted); font-size: .92rem; }
+.auteur-ligne { margin: 2px 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 22px; color: var(--muted); font-size: .92rem; }
 .auteur-ligne b { color: var(--fg); font-family: var(--display); font-size: 1.2rem; }
 .auteur-ligne i { color: var(--accent); font-style: normal; }
 .auteur-moyenne b { color: var(--accent); }
 .auteur-manque { margin: 0; text-align: center; color: var(--muted); font-size: .9rem; font-style: italic; }
 .auteur-sous { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; margin: 6px 0 0; color: #f3e2b8; }
 .auteur-sous::before, .auteur-sous::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(217,181,106,.6), transparent); }
-.tuiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 16px 12px; }
+.tuiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px 14px; }
+.tuiles > .tuile { width: 120px; }
 .tuile { all: unset; cursor: pointer; position: relative; display: grid; justify-items: center; align-content: start; gap: 4px; text-align: center; }
 .tuile:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
 .tuile .couv { width: 84px; height: 126px; margin-bottom: 4px; box-shadow: 0 10px 20px rgba(0,0,0,.6), inset 3px 0 0 rgba(255,255,255,.08); }

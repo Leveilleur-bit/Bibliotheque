@@ -10,6 +10,14 @@ const CLE_COUV = "maBibliothequeCouv2";   // v2 : éditions françaises seulemen
 try { localStorage.removeItem("maBibliothequeCouv"); } catch { /* rien */ }
 const COUV_REESSAI_JOURS = 30;          // un livre sans couverture est recherché à nouveau après 30 jours
 let cacheCouv = (() => { try { return JSON.parse(localStorage.getItem(CLE_COUV)) || {}; } catch { return {}; } })();
+// Une fois : on oublie les « rien trouvé » enregistrés pendant que Google Books refusait les recherches
+try {
+  if (!localStorage.getItem("maBibliothequeCouvPurge1")) {
+    for (const k of Object.keys(cacheCouv)) if (!cacheCouv[k].u) delete cacheCouv[k];
+    localStorage.setItem(CLE_COUV, JSON.stringify(cacheCouv));
+    localStorage.setItem("maBibliothequeCouvPurge1", "1");
+  }
+} catch { /* rien */ }
 const sauverCacheCouv = () => { try { localStorage.setItem(CLE_COUV, JSON.stringify(cacheCouv)); } catch { /* mémoire pleine : tant pis */ } };
 
 // Petit hachage stable d'une chaîne, pour les couleurs
@@ -55,13 +63,23 @@ function titreCorrespond(trouve, cherche) {
   return !!a && !!b && (a.includes(b) || b.includes(a));
 }
 
+// Google Books limite les recherches sans compte : après un refus, on le laisse tranquille une heure
+const googleEnPause = () => { try { return Date.now() < Number(sessionStorage.getItem("googlePause") || 0); } catch { return false; } };
+function pauseGoogle(rep) {
+  if (rep.status === 429 || rep.status === 403) try { sessionStorage.setItem("googlePause", String(Date.now() + 3600e3)); } catch { /* rien */ }
+}
+async function rechercheGoogle(url) {
+  if (googleEnPause()) throw new Error("google en pause");
+  const r = await fetch(url);
+  if (!r.ok) { pauseGoogle(r); throw new Error("google " + r.status); }
+  return r.json();
+}
+
 async function chercherGoogle(titre, l) {
   const nom = typeof nomAuteur === "function" ? nomAuteur(l) : "";
   const q = `intitle:${titre}` + (nom ? ` inauthor:${nom}` : "");
   const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&langRestrict=fr&maxResults=10&printType=books&fields=items(volumeInfo(title,authors,language,imageLinks))`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error("google " + r.status);
-  const j = await r.json();
+  const j = await rechercheGoogle(url);
   for (const it of j.items || []) {
     const v = it.volumeInfo || {};
     const img = v.imageLinks && (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail);
@@ -80,13 +98,15 @@ async function chercherOpenLibrary(titre, l) {
   return d ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : "";
 }
 
+// Renvoie { u, erreur } : « erreur » si une source n'a pas répondu (on réessaiera bientôt au lieu d'attendre 30 jours)
 async function trouverCouverture(l) {
+  let erreur = false;
   for (const t of titresRecherche(l)) {
     for (const source of [chercherGoogle, chercherOpenLibrary]) {
-      try { const u = await source(t, l); if (u) return u; } catch { /* source indisponible : on essaie la suivante */ }
+      try { const u = await source(t, l); if (u) return { u, erreur }; } catch { erreur = true; }
     }
   }
-  return "";
+  return { u: "", erreur };
 }
 
 // URL connue (champ « couverture » du livre, ou trouvée et mémorisée), sinon null
@@ -126,18 +146,19 @@ const observateurCouv = "IntersectionObserver" in window ? new IntersectionObser
 }, { rootMargin: "300px" }) : null;
 
 function pomperCouv() {
-  while (actifsCouv < 2 && fileCouv.length) {
+  while (actifsCouv < 1 && fileCouv.length) {
     const id = fileCouv.shift();
     const l = etat.livres.find(x => x.id === id);
     if (!l) { enCoursCouv.delete(id); continue; }
     actifsCouv++;
-    trouverCouverture(l).then(u => {
-      cacheCouv[id] = { u, d: Date.now() };
+    trouverCouverture(l).then(({ u, erreur }) => {
+      // pas trouvé à cause d'une panne : nouvel essai dans un jour au lieu de trente
+      cacheCouv[id] = { u, d: u || !erreur ? Date.now() : Date.now() - (COUV_REESSAI_JOURS - 1) * 864e5 };
       sauverCacheCouv();
       if (u) document.querySelectorAll(`[data-couv-attente="${CSS.escape(id)}"]`).forEach(el => {
         el.outerHTML = couvertureHTML(l);
       });
-    }).finally(() => { actifsCouv--; enCoursCouv.delete(id); setTimeout(pomperCouv, 150); });
+    }).finally(() => { actifsCouv--; enCoursCouv.delete(id); setTimeout(pomperCouv, 350); });
   }
 }
 

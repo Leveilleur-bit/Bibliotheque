@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "31";   // doit correspondre à version.json
+const VERSION_APPLI = "32";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -467,8 +467,8 @@ function ficheAuteur(cle) {
       <h2 class="auteur-nom">${esc(nomComplet)}</h2>
       ${favori ? `<div class="auteur-favori">❦ Un de tes auteurs de cœur ❦</div>` : ""}
       <p class="auteur-ligne">
-        <span><b>${miens.length}</b> ${miens.length > 1 ? "séries ou titres" : "série ou titre"}</span><i>·</i>
-        <span><b>${volumes}</b> volume${volumes > 1 ? "s" : ""}</span>${moyenne ? `<i>·</i>
+        <span><b>${miens.length}</b> ${miens.length > 1 ? "séries ou titres" : "série ou titre"}</span>
+        <span><b>${volumes}</b> volume${volumes > 1 ? "s" : ""}</span>${moyenne ? `
         <span class="auteur-moyenne"><b>★ ${moyenne.toFixed(1).replace(".", ",")}</b> ta moyenne</span>` : ""}
       </p>
     </header>
@@ -488,7 +488,7 @@ function ficheAuteur(cle) {
     };
     chargerCouvertures(dlg);
     autresLivresAuteur(nomComplet, cle, livres).then(html => { const z = dlg.querySelector("#auteur-autres"); if (z) z.innerHTML = html; })
-      .catch(() => { const z = dlg.querySelector("#auteur-autres"); if (z) z.textContent = "Recherche impossible pour l'instant (hors ligne ?)."; });
+      .catch(() => { const z = dlg.querySelector("#auteur-autres"); if (z) z.textContent = "Les sites de livres ne répondent pas pour l'instant (trop de recherches d'un coup). Réessaie dans une heure."; });
   });
 }
 
@@ -498,19 +498,30 @@ async function autresLivresAuteur(nomComplet, cle, livres) {
   try { cache = JSON.parse(localStorage.getItem(CLE_AUTEURS)) || {}; } catch { /* rien */ }
   let trouves = cache[cle] && Date.now() - cache[cle].d < 30 * 864e5 ? cache[cle].l : null;
   if (!trouves) {
-    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(`inauthor:"${nomComplet}"`)}&langRestrict=fr&maxResults=40&printType=books&fields=items(volumeInfo(title,authors,language,publishedDate,imageLinks))`;
-    const r = await fetch(url);
-    if (!r.ok) throw new Error(r.status);
-    const j = await r.json();
     const vus = new Set();
     trouves = [];
-    for (const it of j.items || []) {
-      const v = it.volumeInfo || {};
-      if (v.language !== "fr" || !v.title || !(v.authors || []).some(a => sansAccents(a).includes(sansAccents(cle)))) continue;
-      const k = sansAccents(v.title).replace(/[^a-z0-9]/g, "");
-      if (vus.has(k)) continue;
+    const ajouter = (t, a, i) => {
+      const k = sansAccents(t).replace(/[^a-z0-9]/g, "");
+      if (!k || vus.has(k)) return;
       vus.add(k);
-      trouves.push({ t: v.title, a: String(v.publishedDate || "").slice(0, 4), i: v.imageLinks ? (v.imageLinks.thumbnail || "").replace(/^http:/, "https:").replace("&edge=curl", "") : "" });
+      trouves.push({ t, a, i });
+    };
+    try {
+      const j = await rechercheGoogle(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(`inauthor:"${nomComplet}"`)}&langRestrict=fr&maxResults=40&printType=books&fields=items(volumeInfo(title,authors,language,publishedDate,imageLinks))`);
+      for (const it of j.items || []) {
+        const v = it.volumeInfo || {};
+        if (v.language !== "fr" || !v.title || !(v.authors || []).some(a => sansAccents(a).includes(sansAccents(cle)))) continue;
+        ajouter(v.title, String(v.publishedDate || "").slice(0, 4), v.imageLinks ? (v.imageLinks.thumbnail || "").replace(/^http:/, "https:").replace("&edge=curl", "") : "");
+      }
+    } catch {
+      // Google Books indisponible : Open Library, éditions françaises
+      const r = await fetch(`https://openlibrary.org/search.json?author=${encodeURIComponent(nomComplet)}&language=fre&limit=40&fields=title,first_publish_year,cover_i,author_name`);
+      if (!r.ok) throw new Error(r.status);
+      const j = await r.json();
+      for (const d of j.docs || []) {
+        if (!(d.author_name || []).some(a => sansAccents(a).includes(sansAccents(cle)))) continue;
+        ajouter(d.title, d.first_publish_year ? String(d.first_publish_year) : "", d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : "");
+      }
     }
     cache[cle] = { d: Date.now(), l: trouves };
     try { localStorage.setItem(CLE_AUTEURS, JSON.stringify(cache)); } catch { /* rien */ }
@@ -522,7 +533,7 @@ async function autresLivresAuteur(nomComplet, cle, livres) {
       <div class="tuile tuile-autre">
         <span class="couv${x.i ? "" : " couv-ko"}">${x.i ? `<img src="${esc(x.i)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('couv-ko');this.remove()">` : ""}${couvertureMaisonHTML({ id: x.t, titre: x.t, auteur: "" })}</span>
         <b>${esc(x.t)}</b>${x.a ? `<span class="tuile-info">${esc(x.a)}</span>` : ""}</div>`).join("")}</div>
-    <p class="doux petit">Trouvés sur Google Books : des recueils ou rééditions peuvent s'y glisser. Pour en garder un, ajoute-le dans Envies.</p>`;
+    <p class="doux petit">Trouvés en ligne (Google Books ou Open Library) : des recueils ou rééditions peuvent s'y glisser. Pour en garder un, ajoute-le dans Envies.</p>`;
 }
 
 /* ---------- Notation rapide : une lecture à la fois ---------- */

@@ -1,7 +1,8 @@
 {
-  "version": "31",
+  "version": "32",
   "date": "2026-10-21",
   "nouveautes": [
-    "Fiche auteur plus chaleureuse : monogramme, fond d'ambiance, couvertures en grand, papier et audio réunis"
+    "Couvertures et « autres livres » : Open Library prend le relais quand Google Books refuse, et les livres sans couverture sont recherchés à nouveau",
+    "Fiche auteur : couvertures centrées, chiffres sans points orphelins"
   ]
 }
