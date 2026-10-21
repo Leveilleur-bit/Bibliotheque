@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "29";   // doit correspondre à version.json
+const VERSION_APPLI = "30";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -408,6 +408,93 @@ function vueAccueil() {
     </section>`;
 }
 
+function voirFiche(l) {
+  if (!l) return;
+  ui.filtreGenre = "tout";
+  ui.affichageGenre = "liste";
+  ouverts.add(l.id);
+  allerA(genreDe(l));
+  ui.recherche = l.titre; rendre();
+}
+
+/* ---------- Fiche auteur ---------- */
+const CLE_AUTEURS = "maBibliothequeAuteurs";   // autres livres trouvés en ligne, gardés 30 jours
+
+function ficheAuteur(cle) {
+  const livres = etat.livres.filter(l => nomAuteur(l) === cle && l.statut !== "refuse").sort(parTitre);
+  if (!livres.length) return;
+  const nomComplet = String(livres.find(l => !/ et /.test(l.auteur || ""))?.auteur || livres[0].auteur).split(/,|&/)[0].trim();
+  const miens = livres.filter(l => !["propose", "refuse"].includes(l.statut) && l.support !== "envie");
+  const volumes = miens.reduce((n, l) => n + Math.max((l.tomes || []).length, 1), 0);
+  const notes = miens.map(l => l.note).filter(Boolean);
+  const moyenne = notes.length ? (notes.reduce((a, b) => a + b, 0) / notes.length) : 0;
+  const manques = miens.filter(l => (Number(l.tomesSerie) || 0) > (l.tomes || []).length);
+  const idees = livres.filter(l => l.statut === "propose" || l.support === "envie");
+  const ligne = l => `
+    <button class="auteur-livre" data-fen-act="voir-fiche" data-id="${esc(l.id)}">
+      ${couvertureHTML(l)}
+      <span><b>${esc(l.titre)}</b>
+        <span class="doux petit">${l.support === "audible" ? "Audio" : l.support === "papier" ? "Papier" : "Envie"}${(l.tomes || []).length > 1 ? ` · ${l.tomes.length}${l.tomesSerie > l.tomes.length ? "/" + l.tomesSerie : ""} tomes` : ""}${l.statut === "en_cours" ? " · en cours" : l.statut === "a_lire" || l.statut === "a_ecouter" ? " · à venir" : ""}</span>
+        ${l.note ? `<span class="etoiles-mini" aria-label="${l.note} sur 5">${"★".repeat(l.note)}<span>${"★".repeat(5 - l.note)}</span></span>` : ""}
+      </span>
+    </button>`;
+  ouvrirFenetre(`
+    <div class="nr-tete"><span class="doux petit">Fiche auteur</span><button class="btn-discret" data-fen-act="fermer" aria-label="Fermer">✕</button></div>
+    <h2 class="auteur-nom">${esc(nomComplet)}</h2>
+    <div class="auteur-chiffres">
+      <div><b>${miens.length}</b><span>${miens.length > 1 ? "séries ou titres" : "série ou titre"}</span></div>
+      <div><b>${volumes}</b><span>volume${volumes > 1 ? "s" : ""}</span></div>
+      <div><b>${moyenne ? moyenne.toFixed(1).replace(".", ",") : "–"}</b><span>ta note moyenne</span></div>
+    </div>
+    ${manques.length ? `<p class="auteur-manque">Il te manque ${manques.map(l => `${l.tomesSerie - l.tomes.length} tome${l.tomesSerie - l.tomes.length > 1 ? "s" : ""} de <i>${esc(l.titre)}</i>`).join(", ")}.</p>` : ""}
+    <div class="auteur-liste">${miens.map(ligne).join("")}</div>
+    ${idees.length ? `<h3 class="auteur-sous">Dans tes idées et envies</h3><div class="auteur-liste">${idees.map(ligne).join("")}</div>` : ""}
+    <h3 class="auteur-sous">Ses autres livres en français</h3>
+    <div id="auteur-autres" class="doux petit">Recherche…</div>`, dlg => {
+    dlg.onclick = ev => {
+      const el = ev.target.closest("[data-fen-act]");
+      if (!el) return;
+      fermerFenetre();
+      if (el.dataset.fenAct === "voir-fiche") voirFiche(livre(el.dataset.id));
+    };
+    chargerCouvertures(dlg);
+    autresLivresAuteur(nomComplet, cle, livres).then(html => { const z = dlg.querySelector("#auteur-autres"); if (z) z.innerHTML = html; })
+      .catch(() => { const z = dlg.querySelector("#auteur-autres"); if (z) z.textContent = "Recherche impossible pour l'instant (hors ligne ?)."; });
+  });
+}
+
+// Autres livres de l'auteur en français (Google Books), sans ceux déjà dans la bibliothèque
+async function autresLivresAuteur(nomComplet, cle, livres) {
+  let cache = {};
+  try { cache = JSON.parse(localStorage.getItem(CLE_AUTEURS)) || {}; } catch { /* rien */ }
+  let trouves = cache[cle] && Date.now() - cache[cle].d < 30 * 864e5 ? cache[cle].l : null;
+  if (!trouves) {
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(`inauthor:"${nomComplet}"`)}&langRestrict=fr&maxResults=40&printType=books&fields=items(volumeInfo(title,authors,language,publishedDate,imageLinks))`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    const vus = new Set();
+    trouves = [];
+    for (const it of j.items || []) {
+      const v = it.volumeInfo || {};
+      if (v.language !== "fr" || !v.title || !(v.authors || []).some(a => sansAccents(a).includes(sansAccents(cle)))) continue;
+      const k = sansAccents(v.title).replace(/[^a-z0-9]/g, "");
+      if (vus.has(k)) continue;
+      vus.add(k);
+      trouves.push({ t: v.title, a: String(v.publishedDate || "").slice(0, 4), i: v.imageLinks ? (v.imageLinks.thumbnail || "").replace(/^http:/, "https:").replace("&edge=curl", "") : "" });
+    }
+    cache[cle] = { d: Date.now(), l: trouves };
+    try { localStorage.setItem(CLE_AUTEURS, JSON.stringify(cache)); } catch { /* rien */ }
+  }
+  const dejaLa = t => livres.some(l => titreCorrespond(l.titre, t) || (l.tomes || []).some(x => titreCorrespond(x.titre, t)));
+  const autres = trouves.filter(x => !dejaLa(x.t)).slice(0, 12);
+  if (!autres.length) return "Rien trouvé de plus en français.";
+  return `<div class="auteur-autres">${autres.map(x => `
+      <div class="auteur-autre">${x.i ? `<img src="${esc(x.i)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : `<span class="auteur-autre-vide"></span>`}
+        <span><b>${esc(x.t)}</b>${x.a ? `<span class="doux petit">${esc(x.a)}</span>` : ""}</span></div>`).join("")}</div>
+    <p class="doux petit">Trouvés sur Google Books : des recueils ou rééditions peuvent s'y glisser. Pour en garder un, ajoute-le dans Envies.</p>`;
+}
+
 /* ---------- Notation rapide : une lecture à la fois ---------- */
 const aNoter = () => etat.livres.filter(l => (l.statut === "lu" || l.statut === "ecoute") && !l.note).sort(parAuteur);
 
@@ -540,7 +627,11 @@ function listeGenreHTML(livres, messageVide) {
   for (const l of livres) {
     const nom = nomAuteur(l) ? (String(l.auteur).split(/,|&/)[0].trim()) : "Auteurs divers";
     const cle = nomAuteur(l) || "~";
-    if (cle !== courant) { html += `<h3 class="intertitre-auteur">${esc(nom)}</h3>`; courant = cle; }
+    if (cle !== courant) {
+      html += cle === "~" ? `<h3 class="intertitre-auteur">${esc(nom)}</h3>`
+        : `<h3 class="intertitre-auteur"><button data-act="fiche-auteur" data-nom="${esc(cle)}" aria-label="Fiche de l'auteur ${esc(nom)}">${esc(nom)}</button></h3>`;
+      courant = cle;
+    }
     html += carteLivre(l);
   }
   return `<div class="liste">${html}</div>`;
@@ -771,14 +862,8 @@ function agir(btn) {
       return;
     }
     case "noter-rapide": noterRapide(); return;
-    case "voir-fiche":
-      if (!l) return;
-      ui.filtreGenre = "tout";
-      ui.affichageGenre = "liste";
-      ouverts.add(l.id);
-      allerA(genreDe(l));
-      ui.recherche = l.titre; rendre();
-      return;
+    case "voir-fiche": voirFiche(l); return;
+    case "fiche-auteur": ficheAuteur(btn.dataset.nom); return;
     case "affichage-genre": ui.affichageGenre = btn.dataset.a; sauverUI(); rendre(); return;
     case "tri-genre": ui.triGenre = btn.dataset.t; sauverUI(); rendre(); return;
     case "ajouter": formulaireLivre({ type: btn.dataset.type }); return;

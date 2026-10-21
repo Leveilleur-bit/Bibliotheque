@@ -391,3 +391,27 @@ body[data-fond="autre"] .genre-tete h2 { color: #f2c98a; }
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .95 0 0 0 0 .85 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E"); }
 .livre > * { position: relative; }
 .liste + .rangee, .section > .rangee { margin-top: 4px; }
+
+/* ---------- Fiche auteur ---------- */
+.intertitre-auteur button { all: unset; cursor: pointer; }
+.intertitre-auteur button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.auteur-nom { font-size: 2rem; color: var(--accent); margin: 0; }
+.auteur-chiffres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
+.auteur-chiffres div { background: var(--surface-2); border-radius: 10px; padding: 8px 4px; }
+.auteur-chiffres b { display: block; font-family: var(--display); font-size: 1.7rem; color: var(--fg); }
+.auteur-chiffres span { font-size: .78rem; color: var(--muted); }
+.auteur-manque { margin: 0; color: var(--muted); font-size: .92rem; }
+.auteur-sous { font-size: 1.15rem; margin: 6px 0 0; }
+.auteur-liste { display: grid; gap: 8px; }
+.auteur-livre { all: unset; cursor: pointer; display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; padding: 4px; border-radius: 8px; }
+.auteur-livre:focus-visible { outline: 2px solid var(--accent); }
+.auteur-livre .couv { width: 40px; height: 60px; }
+.auteur-livre b { display: block; font-family: var(--display); font-size: 1.12rem; line-height: 1.15; }
+.auteur-livre .couv-titre { font-size: .45rem; }
+.auteur-livre .couv-auteur { display: none; }
+.etoiles-mini { color: var(--accent); font-size: .8rem; letter-spacing: 1px; }
+.etoiles-mini span { color: rgba(255,255,255,.2); }
+.auteur-autres { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.auteur-autre { display: grid; grid-template-columns: 36px 1fr; gap: 8px; align-items: start; color: var(--fg); font-size: .85rem; }
+.auteur-autre img, .auteur-autre-vide { width: 36px; height: 54px; object-fit: cover; border-radius: 2px; background: var(--surface-2); }
+.auteur-autre b { display: block; font-weight: 600; line-height: 1.2; }
