@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "30";   // doit correspondre à version.json
+const VERSION_APPLI = "31";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -421,36 +421,65 @@ function voirFiche(l) {
 const CLE_AUTEURS = "maBibliothequeAuteurs";   // autres livres trouvés en ligne, gardés 30 jours
 
 function ficheAuteur(cle) {
-  const livres = etat.livres.filter(l => nomAuteur(l) === cle && l.statut !== "refuse").sort(parTitre);
+  const livres = etat.livres.filter(l => nomAuteur(l) === cle && l.statut !== "refuse");
   if (!livres.length) return;
   const nomComplet = String(livres.find(l => !/ et /.test(l.auteur || ""))?.auteur || livres[0].auteur).split(/,|&/)[0].trim();
   const miens = livres.filter(l => !["propose", "refuse"].includes(l.statut) && l.support !== "envie");
   const volumes = miens.reduce((n, l) => n + Math.max((l.tomes || []).length, 1), 0);
   const notes = miens.map(l => l.note).filter(Boolean);
-  const moyenne = notes.length ? (notes.reduce((a, b) => a + b, 0) / notes.length) : 0;
+  const moyenne = notes.length ? notes.reduce((a, b) => a + b, 0) / notes.length : 0;
   const manques = miens.filter(l => (Number(l.tomesSerie) || 0) > (l.tomes || []).length);
   const idees = livres.filter(l => l.statut === "propose" || l.support === "envie");
-  const ligne = l => `
-    <button class="auteur-livre" data-fen-act="voir-fiche" data-id="${esc(l.id)}">
-      ${couvertureHTML(l)}
-      <span><b>${esc(l.titre)}</b>
-        <span class="doux petit">${l.support === "audible" ? "Audio" : l.support === "papier" ? "Papier" : "Envie"}${(l.tomes || []).length > 1 ? ` · ${l.tomes.length}${l.tomesSerie > l.tomes.length ? "/" + l.tomesSerie : ""} tomes` : ""}${l.statut === "en_cours" ? " · en cours" : l.statut === "a_lire" || l.statut === "a_ecouter" ? " · à venir" : ""}</span>
-        ${l.note ? `<span class="etoiles-mini" aria-label="${l.note} sur 5">${"★".repeat(l.note)}<span>${"★".repeat(5 - l.note)}</span></span>` : ""}
-      </span>
-    </button>`;
+  const genre = genreDe(miens[0] || livres[0]);
+  const initiales = nomComplet.split(/[\s-]+/).filter(m => /^[A-ZÀ-Ý]/.test(m)).map(m => m[0]).slice(-2).join("");
+
+  // Un même livre en papier et en audio ne fait qu'une tuile
+  const regrouper = liste => {
+    const g = new Map();
+    for (const l of liste) {
+      const k = cleTitre(l.titre);
+      if (!g.has(k)) g.set(k, []);
+      g.get(k).push(l);
+    }
+    return [...g.values()].sort((a, b) => (Math.max(...b.map(x => x.note || 0)) - Math.max(...a.map(x => x.note || 0))) || parTitre(a[0], b[0]));
+  };
+  const tuile = groupe => {
+    const l = groupe.find(x => urlCouverture(x)) || groupe[0];
+    const note = Math.max(...groupe.map(x => x.note || 0));
+    const supports = [...new Set(groupe.map(x => x.support === "audible" ? "Audio" : x.support === "papier" ? "Papier" : "Envie"))].join(" + ");
+    const nbTomes = Math.max(...groupe.map(x => (x.tomes || []).length));
+    const etat_ = groupe.some(x => x.statut === "en_cours") ? "en cours" : groupe.every(x => ["a_lire", "a_ecouter", "propose"].includes(x.statut) || x.support === "envie") ? "à venir" : "";
+    const titre = String(l.titre).replace(/\s*\((série|papier|French Edition)\)/gi, "");
+    return `
+      <button class="tuile" data-fen-act="voir-fiche" data-id="${esc(l.id)}">
+        ${couvertureHTML(l)}
+        ${etat_ ? `<span class="tuile-ruban">${etat_}</span>` : ""}
+        <b>${esc(titre)}</b>
+        <span class="tuile-info">${supports}${nbTomes > 1 ? ` · ${nbTomes} t.` : ""}</span>
+        ${note ? `<span class="etoiles-mini" aria-label="${note} sur 5">${"★".repeat(note)}<span>${"★".repeat(5 - note)}</span></span>` : ""}
+      </button>`;
+  };
+  const favori = moyenne >= 4.5 && notes.length >= 2;
   ouvrirFenetre(`
-    <div class="nr-tete"><span class="doux petit">Fiche auteur</span><button class="btn-discret" data-fen-act="fermer" aria-label="Fermer">✕</button></div>
-    <h2 class="auteur-nom">${esc(nomComplet)}</h2>
-    <div class="auteur-chiffres">
-      <div><b>${miens.length}</b><span>${miens.length > 1 ? "séries ou titres" : "série ou titre"}</span></div>
-      <div><b>${volumes}</b><span>volume${volumes > 1 ? "s" : ""}</span></div>
-      <div><b>${moyenne ? moyenne.toFixed(1).replace(".", ",") : "–"}</b><span>ta note moyenne</span></div>
-    </div>
-    ${manques.length ? `<p class="auteur-manque">Il te manque ${manques.map(l => `${l.tomesSerie - l.tomes.length} tome${l.tomesSerie - l.tomes.length > 1 ? "s" : ""} de <i>${esc(l.titre)}</i>`).join(", ")}.</p>` : ""}
-    <div class="auteur-liste">${miens.map(ligne).join("")}</div>
-    ${idees.length ? `<h3 class="auteur-sous">Dans tes idées et envies</h3><div class="auteur-liste">${idees.map(ligne).join("")}</div>` : ""}
-    <h3 class="auteur-sous">Ses autres livres en français</h3>
+    <button class="btn-discret fermer-coin" data-fen-act="fermer" aria-label="Fermer">✕</button>
+    <header class="auteur-entete">
+      <div class="monogramme" aria-hidden="true"><span>${esc(initiales)}</span></div>
+      <h2 class="auteur-nom">${esc(nomComplet)}</h2>
+      ${favori ? `<div class="auteur-favori">❦ Un de tes auteurs de cœur ❦</div>` : ""}
+      <p class="auteur-ligne">
+        <span><b>${miens.length}</b> ${miens.length > 1 ? "séries ou titres" : "série ou titre"}</span><i>·</i>
+        <span><b>${volumes}</b> volume${volumes > 1 ? "s" : ""}</span>${moyenne ? `<i>·</i>
+        <span class="auteur-moyenne"><b>★ ${moyenne.toFixed(1).replace(".", ",")}</b> ta moyenne</span>` : ""}
+      </p>
+    </header>
+    ${manques.length ? `<p class="auteur-manque">❧ Il te manque ${manques.map(l => `${l.tomesSerie - l.tomes.length} tome${l.tomesSerie - l.tomes.length > 1 ? "s" : ""} de <i>${esc(l.titre)}</i>`).join(", ")}.</p>` : ""}
+    <h3 class="auteur-sous"><span>Dans ta bibliothèque</span></h3>
+    <div class="tuiles">${regrouper(miens).map(tuile).join("")}</div>
+    ${idees.length ? `<h3 class="auteur-sous"><span>Dans tes idées</span></h3><div class="tuiles">${regrouper(idees).map(tuile).join("")}</div>` : ""}
+    <h3 class="auteur-sous"><span>Ses autres livres en français</span></h3>
     <div id="auteur-autres" class="doux petit">Recherche…</div>`, dlg => {
+    dlg.classList.add("fenetre-auteur");
+    dlg.style.setProperty("--fond-fenetre", `url("img/${genre === "autre" ? "autres" : genre}.jpg")`);
     dlg.onclick = ev => {
       const el = ev.target.closest("[data-fen-act]");
       if (!el) return;
@@ -489,9 +518,10 @@ async function autresLivresAuteur(nomComplet, cle, livres) {
   const dejaLa = t => livres.some(l => titreCorrespond(l.titre, t) || (l.tomes || []).some(x => titreCorrespond(x.titre, t)));
   const autres = trouves.filter(x => !dejaLa(x.t)).slice(0, 12);
   if (!autres.length) return "Rien trouvé de plus en français.";
-  return `<div class="auteur-autres">${autres.map(x => `
-      <div class="auteur-autre">${x.i ? `<img src="${esc(x.i)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : `<span class="auteur-autre-vide"></span>`}
-        <span><b>${esc(x.t)}</b>${x.a ? `<span class="doux petit">${esc(x.a)}</span>` : ""}</span></div>`).join("")}</div>
+  return `<div class="tuiles">${autres.map(x => `
+      <div class="tuile tuile-autre">
+        <span class="couv${x.i ? "" : " couv-ko"}">${x.i ? `<img src="${esc(x.i)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.add('couv-ko');this.remove()">` : ""}${couvertureMaisonHTML({ id: x.t, titre: x.t, auteur: "" })}</span>
+        <b>${esc(x.t)}</b>${x.a ? `<span class="tuile-info">${esc(x.a)}</span>` : ""}</div>`).join("")}</div>
     <p class="doux petit">Trouvés sur Google Books : des recueils ou rééditions peuvent s'y glisser. Pour en garder un, ajoute-le dans Envies.</p>`;
 }
 
@@ -723,6 +753,8 @@ function allerA(vue) {
 
 function ouvrirFenetre(html, init) {
   const dlg = $("#fenetre");
+  dlg.className = "fenetre";
+  dlg.style.removeProperty("--fond-fenetre");
   dlg.innerHTML = `<div class="fenetre-int">${html}</div>`;
   if (init) init(dlg);
   if (!dlg.open) dlg.showModal();

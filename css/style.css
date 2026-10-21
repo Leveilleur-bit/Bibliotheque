@@ -395,23 +395,36 @@ body[data-fond="autre"] .genre-tete h2 { color: #f2c98a; }
 /* ---------- Fiche auteur ---------- */
 .intertitre-auteur button { all: unset; cursor: pointer; }
 .intertitre-auteur button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
-.auteur-nom { font-size: 2rem; color: var(--accent); margin: 0; }
-.auteur-chiffres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; }
-.auteur-chiffres div { background: var(--surface-2); border-radius: 10px; padding: 8px 4px; }
-.auteur-chiffres b { display: block; font-family: var(--display); font-size: 1.7rem; color: var(--fg); }
-.auteur-chiffres span { font-size: .78rem; color: var(--muted); }
-.auteur-manque { margin: 0; color: var(--muted); font-size: .92rem; }
-.auteur-sous { font-size: 1.15rem; margin: 6px 0 0; }
-.auteur-liste { display: grid; gap: 8px; }
-.auteur-livre { all: unset; cursor: pointer; display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; padding: 4px; border-radius: 8px; }
-.auteur-livre:focus-visible { outline: 2px solid var(--accent); }
-.auteur-livre .couv { width: 40px; height: 60px; }
-.auteur-livre b { display: block; font-family: var(--display); font-size: 1.12rem; line-height: 1.15; }
-.auteur-livre .couv-titre { font-size: .45rem; }
-.auteur-livre .couv-auteur { display: none; }
+.fenetre.fenetre-auteur {
+  background: linear-gradient(180deg, rgba(12,10,14,.55) 0, rgba(12,10,14,.88) 220px, rgba(12,10,14,.94) 100%), var(--fond-fenetre) center top / cover, var(--opaque);
+  border-color: rgba(217,181,106,.35);
+}
+.fenetre-auteur .fenetre-int { position: relative; gap: 14px; padding: 22px 18px 26px; }
+.fermer-coin { position: absolute; top: 10px; right: 10px; font-size: 1.2rem; z-index: 3; }
+.auteur-entete { text-align: center; display: grid; justify-items: center; gap: 6px; padding-top: 6px; }
+.monogramme { width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 35% 30%, #3a2a1a, #120d09 75%);
+  box-shadow: 0 0 0 2px rgba(217,181,106,.75), 0 0 0 6px rgba(18,13,9,.9), 0 0 0 7px rgba(217,181,106,.45), 0 10px 30px rgba(0,0,0,.6); }
+.monogramme span { font-family: var(--display); font-size: 2.2rem; font-weight: 700; color: var(--accent); letter-spacing: .02em; font-style: italic; }
+.auteur-nom { font-size: 2.1rem; color: #f3e2b8; margin: 4px 0 0; text-shadow: 0 2px 10px rgba(0,0,0,.8); }
+.auteur-favori { font-family: var(--display); font-style: italic; color: var(--accent); font-size: 1.05rem; }
+.auteur-ligne { margin: 2px 0 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 8px; color: var(--muted); font-size: .92rem; }
+.auteur-ligne b { color: var(--fg); font-family: var(--display); font-size: 1.2rem; }
+.auteur-ligne i { color: var(--accent); font-style: normal; }
+.auteur-moyenne b { color: var(--accent); }
+.auteur-manque { margin: 0; text-align: center; color: var(--muted); font-size: .9rem; font-style: italic; }
+.auteur-sous { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; margin: 6px 0 0; color: #f3e2b8; }
+.auteur-sous::before, .auteur-sous::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(217,181,106,.6), transparent); }
+.tuiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 16px 12px; }
+.tuile { all: unset; cursor: pointer; position: relative; display: grid; justify-items: center; align-content: start; gap: 4px; text-align: center; }
+.tuile:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 6px; }
+.tuile .couv { width: 84px; height: 126px; margin-bottom: 4px; box-shadow: 0 10px 20px rgba(0,0,0,.6), inset 3px 0 0 rgba(255,255,255,.08); }
+.tuile .couv-titre { font-size: .7rem; }
+.tuile b { font-family: var(--display); font-size: 1rem; line-height: 1.1; font-weight: 700; }
+.tuile-info { font-size: .74rem; color: var(--muted); }
+.tuile-ruban { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); white-space: nowrap; background: var(--accent); color: var(--accent-ink); font-size: .62rem; font-weight: 700;
+  padding: 2px 6px; border-radius: 3px; box-shadow: 0 2px 6px rgba(0,0,0,.5); z-index: 3; text-transform: uppercase; letter-spacing: .04em; }
+@media (hover: hover) { .tuile:hover .couv { transform: translateY(-3px); transition: transform .15s; } }
 .etoiles-mini { color: var(--accent); font-size: .8rem; letter-spacing: 1px; }
 .etoiles-mini span { color: rgba(255,255,255,.2); }
-.auteur-autres { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-.auteur-autre { display: grid; grid-template-columns: 36px 1fr; gap: 8px; align-items: start; color: var(--fg); font-size: .85rem; }
-.auteur-autre img, .auteur-autre-vide { width: 36px; height: 54px; object-fit: cover; border-radius: 2px; background: var(--surface-2); }
-.auteur-autre b { display: block; font-weight: 600; line-height: 1.2; }
+.tuile-autre { cursor: default; }
