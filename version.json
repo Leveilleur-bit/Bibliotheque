@@ -1,8 +1,7 @@
 {
-  "version": "32",
-  "date": "2026-10-21",
+  "version": "33",
+  "date": "2026-10-22",
   "nouveautes": [
-    "Couvertures et « autres livres » : Open Library prend le relais quand Google Books refuse, et les livres sans couverture sont recherchés à nouveau",
-    "Fiche auteur : couvertures centrées, chiffres sans points orphelins"
+    "Idées : « Déjà lu » n'apparaît plus sur une redécouverte et n'ajoute plus « Déjà lu » en double"
   ]
 }

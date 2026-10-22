@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "32";   // doit correspondre à version.json
+const VERSION_APPLI = "33";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -231,7 +231,7 @@ function actionsLivre(l) {
   if (l.support === "audible") {
     if (l.statut === "propose") return `
       <button class="btn" data-act="valider" data-id="${id}">Je l'ajoute à écouter</button>
-      <button class="btn-sec" data-act="deja-lu" data-id="${id}">Déjà lu</button>
+      ${l.axe === "Redécouverte" ? "" : `<button class="btn-sec" data-act="deja-lu" data-id="${id}">Déjà lu</button>`}
       <button class="btn-discret" data-act="refuser" data-id="${id}">Pas pour moi</button>`;
     if (l.statut === "refuse") return `<button class="btn-sec" data-act="remettre" data-id="${id}">Remettre en proposition</button>`;
     let a = "";
@@ -948,8 +948,9 @@ function agir(btn) {
     case "refuser": modifier(id, { statut: "refuse" }); toast("Écartée : Claude ne la reproposera pas."); return;
     case "remettre": modifier(id, { statut: "propose" }); return;
     case "deja-lu":
-      modifier(id, { axe: "Redécouverte", notes: "Déjà lu. " + (l.notes || "") });
-      toast("Marqué déjà lu : la proposition passe en redécouverte.");
+      if (l.axe === "Redécouverte") return;
+      modifier(id, { axe: "Redécouverte", notes: /^déjà lu/i.test(l.notes || "") ? l.notes : "Déjà lu. " + (l.notes || "") });
+      toast("Marqué déjà lu : l'idée reste en redécouverte. Si tu ne veux pas la réécouter, touche « Pas pour moi ».");
       return;
     case "achete-papier": modifier(id, { support: "papier", statut: "a_lire" }); toast("Rangé dans ta pile à lire."); return;
     case "envie-lue": modifier(id, { support: "papier", statut: "lu", dateFin: aujourdhui() }); toast("Rangé dans tes livres lus."); return;
