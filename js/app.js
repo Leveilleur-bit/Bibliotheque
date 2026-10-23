@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "34";   // doit correspondre à version.json
+const VERSION_APPLI = "35";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -619,6 +619,7 @@ function carteSerieHTML(l) {
 }
 
 const ONGLETS_IDEES = [["fantasy", "Fantasy"], ["sf", "SF"], ["classiques", "Grands classiques"], ["series", "Compléter une série"]];
+const NB_CLASSIQUES = 5;   // les suivants attendent en réserve et prennent la place de ceux qui partent
 const ongletIdee = l => l.classique ? "classiques" : l.genre === "sf" ? "sf" : "fantasy";
 const INTROS_IDEES = {
   fantasy: "Les idées de Claude en fantasy, classées. La langue française se confirme sur la fiche audible.fr avant de valider.",
@@ -631,18 +632,21 @@ function vuePropositions() {
   const props = etat.livres.filter(l => l.statut === "propose").sort((a, b) => (a.rang ?? 99) - (b.rang ?? 99));
   const refusees = etat.livres.filter(l => l.statut === "refuse").sort(parMaj);
   const series = seriesACompleter();
-  const compter = k => k === "series" ? series.length : props.filter(l => ongletIdee(l) === k).length;
+  const classiques = props.filter(l => ongletIdee(l) === "classiques");
+  const reserve = classiques.slice(NB_CLASSIQUES);
+  const compter = k => k === "series" ? series.length : k === "classiques" ? Math.min(classiques.length, NB_CLASSIQUES) : props.filter(l => ongletIdee(l) === k).length;
   const onglets = filtresHTML(ONGLETS_IDEES, ui.ongletIdees, "onglet-idees", compter);
   if (ui.ongletIdees === "series") return `
     ${onglets}
     <p class="intro">Les séries que tu as commencées et dont il te manque des tomes. Le total n'est indiqué que pour les séries dont Claude est sûr ; tu peux le renseigner toi-même dans « Modifier ».</p>
     ${series.length ? `<div class="liste">${series.map(carteSerieHTML).join("")}</div>` : `<div class="vide">Aucune série incomplète repérée.</div>`}`;
-  const ici = props.filter(l => ongletIdee(l) === ui.ongletIdees);
+  const ici = ui.ongletIdees === "classiques" ? classiques.slice(0, NB_CLASSIQUES) : props.filter(l => ongletIdee(l) === ui.ongletIdees);
   const ecartees = refusees.filter(l => ongletIdee(l) === ui.ongletIdees);
   return `
     ${onglets}
     <p class="intro">${INTROS_IDEES[ui.ongletIdees]}</p>
     ${listeHTML(ici, "Aucune idée ici pour l'instant. Demande à Claude : il en ajoutera.")}
+    ${ui.ongletIdees === "classiques" ? `<p class="doux petit">${reserve.length ? `${reserve.length} classique${reserve.length > 1 ? "s" : ""} en réserve : si tu en écartes un, l'ajoutes à écouter ou l'as déjà lu, le suivant prend sa place.` : "La réserve est vide : demande à Claude d'autres classiques."}</p>` : ""}
     ${ecartees.length ? `
       <details class="repli section">
         <summary>Écartées (${ecartees.length})</summary>
@@ -959,9 +963,14 @@ function agir(btn) {
     case "rembourse": changerSolde(1); modifier(id, { rembourse: true }); toast("Crédit rendu au solde."); return;
     case "lu": modifier(id, { statut: "lu", dateFin: aujourdhui() }); return;
     case "valider": fenetreValidation(l); return;
-    case "refuser": modifier(id, { statut: "refuse" }); toast("Écartée : Claude ne la reproposera pas."); return;
+    case "refuser": modifier(id, { statut: "refuse" }); toast(l.classique ? "Écarté : un autre classique prend sa place." : "Écartée : Claude ne la reproposera pas."); return;
     case "remettre": modifier(id, { statut: "propose" }); return;
     case "deja-lu":
+      if (l.classique) {   // un classique déjà lu rejoint tes lectures, et le suivant de la réserve apparaît
+        modifier(id, { support: "papier", statut: "lu", rang: null, notes: "Classique déjà lu (signalé depuis Idées)." });
+        toast("Rangé dans tes lectures : un autre classique prend sa place.");
+        return;
+      }
       if (l.axe === "Redécouverte") return;
       modifier(id, { axe: "Redécouverte", notes: /^déjà lu/i.test(l.notes || "") ? l.notes : "Déjà lu. " + (l.notes || "") });
       toast("Marqué déjà lu : l'idée reste en redécouverte. Si tu ne veux pas la réécouter, touche « Pas pour moi ».");
