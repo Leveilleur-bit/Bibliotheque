@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "33";   // doit correspondre à version.json
+const VERSION_APPLI = "34";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -53,7 +53,7 @@ function normaliser(d) {
 }
 
 let etat = normaliser(lireJSON(CLE_STOCKAGE));
-const ui = Object.assign({ vue: "audible", filtreAudible: "a_ecouter", filtreGenre: "tout", triGenre: "auteur", ongletIdees: "nouveau", affichageGenre: "liste", recherche: "" }, lireJSON(CLE_UI) || {});
+const ui = Object.assign({ vue: "audible", filtreAudible: "a_ecouter", filtreGenre: "tout", triGenre: "auteur", ongletIdees: "fantasy", affichageGenre: "liste", recherche: "" }, lireJSON(CLE_UI) || {});
 const ouverts = new Set();
 let suppressionEnAttente = null;
 
@@ -153,7 +153,12 @@ function carteLivre(l) {
     if (sup && l.statut !== "propose") pastilles.push(`<span class="pastille support">${sup}</span>`);
   }
   if (l.support === "papier" && l.statut === "en_cours") pastilles.push(`<span class="pastille accent">En cours de lecture</span>`);
-  if (l.statut === "propose" && l.axe) pastilles.push(`<span class="pastille accent">${l.rang ? "n°" + l.rang + " · " : ""}${esc(l.axe)}</span>`);
+  if (l.statut === "propose" && l.axe) {
+    // numéro dans son onglet d'Idées (1, 2, 3…), pas le rang global
+    const memes = etat.livres.filter(x => x.statut === "propose" && ongletIdee(x) === ongletIdee(l)).sort((a, b) => (a.rang ?? 99) - (b.rang ?? 99));
+    const n = memes.indexOf(l) + 1;
+    pastilles.push(`<span class="pastille accent">${n ? "n°" + n + " · " : ""}${esc(l.axe)}</span>`);
+  }
   if (l.support === "audible" && l.statut !== "propose" && l.statut !== "refuse") {
     pastilles.push(l.verifieFR
       ? `<span class="pastille ok">FR vérifié${l.dateVerif ? " · " + esc(dateCourte(l.dateVerif)) : ""}</span>`
@@ -613,26 +618,35 @@ function carteSerieHTML(l) {
     </article>`;
 }
 
-const ONGLETS_IDEES = [["nouveau", "Nouveautés"], ["series", "Compléter une série"]];
+const ONGLETS_IDEES = [["fantasy", "Fantasy"], ["sf", "SF"], ["classiques", "Grands classiques"], ["series", "Compléter une série"]];
+const ongletIdee = l => l.classique ? "classiques" : l.genre === "sf" ? "sf" : "fantasy";
+const INTROS_IDEES = {
+  fantasy: "Les idées de Claude en fantasy, classées. La langue française se confirme sur la fiche audible.fr avant de valider.",
+  sf: "Les idées de Claude en science-fiction, classées. La langue française se confirme sur la fiche audible.fr avant de valider.",
+  classiques: "Cinq livres à lire une fois dans sa vie, choisis pour toi parmi les classiques que tu n'as pas encore lus. Tous existent en livre audio français.",
+};
 
 function vuePropositions() {
+  if (!ONGLETS_IDEES.some(([k]) => k === ui.ongletIdees)) ui.ongletIdees = "fantasy";
   const props = etat.livres.filter(l => l.statut === "propose").sort((a, b) => (a.rang ?? 99) - (b.rang ?? 99));
   const refusees = etat.livres.filter(l => l.statut === "refuse").sort(parMaj);
   const series = seriesACompleter();
-  const compter = k => k === "series" ? series.length : props.length;
+  const compter = k => k === "series" ? series.length : props.filter(l => ongletIdee(l) === k).length;
   const onglets = filtresHTML(ONGLETS_IDEES, ui.ongletIdees, "onglet-idees", compter);
   if (ui.ongletIdees === "series") return `
     ${onglets}
     <p class="intro">Les séries que tu as commencées et dont il te manque des tomes. Le total n'est indiqué que pour les séries dont Claude est sûr ; tu peux le renseigner toi-même dans « Modifier ».</p>
     ${series.length ? `<div class="liste">${series.map(carteSerieHTML).join("")}</div>` : `<div class="vide">Aucune série incomplète repérée.</div>`}`;
+  const ici = props.filter(l => ongletIdee(l) === ui.ongletIdees);
+  const ecartees = refusees.filter(l => ongletIdee(l) === ui.ongletIdees);
   return `
     ${onglets}
-    <p class="intro">Les idées de Claude pour ta prochaine écoute, classées. La langue française se confirme sur la fiche audible.fr avant de valider.</p>
-    ${listeHTML(props, "Aucune proposition en attente. Demande à Claude ta prochaine écoute : il ajoutera ses idées ici.")}
-    ${refusees.length ? `
+    <p class="intro">${INTROS_IDEES[ui.ongletIdees]}</p>
+    ${listeHTML(ici, "Aucune idée ici pour l'instant. Demande à Claude : il en ajoutera.")}
+    ${ecartees.length ? `
       <details class="repli section">
-        <summary>Écartées (${refusees.length})</summary>
-        <div class="liste">${refusees.map(carteLivre).join("")}</div>
+        <summary>Écartées (${ecartees.length})</summary>
+        <div class="liste">${ecartees.map(carteLivre).join("")}</div>
       </details>` : ""}`;
 }
 
