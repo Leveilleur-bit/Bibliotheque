@@ -356,7 +356,7 @@ body[data-fond="autre"] .genre-tete h2 { color: #f2c98a; }
 
 /* ---------- Étagère ---------- */
 .etagere {
-  --planche: 14px; --rang: 176px;
+  --planche: 14px; --rang: 200px;
   display: flex; flex-wrap: wrap; align-items: flex-end; align-content: flex-start; gap: 0 2px;
   padding: 10px 10px 0; border-radius: 10px;
   background:
@@ -374,13 +374,26 @@ body[data-fond="autre"] .genre-tete h2 { color: #f2c98a; }
   box-shadow: inset 0 9px 0 -6px rgba(217,181,106,.55), inset 0 -9px 0 -6px rgba(217,181,106,.55), 1px 0 2px rgba(0,0,0,.5);
   display: flex; align-items: center; justify-content: center; overflow: hidden;
 }
-.tranche span { writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--display); font-weight: 700; font-size: .72rem; color: #f0dcaa;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-height: calc(var(--h) - 22px); text-shadow: 0 1px 1px rgba(0,0,0,.6); }
+.tranche-texte { writing-mode: vertical-rl; transform: rotate(180deg); display: flex; flex-direction: column; justify-content: flex-end; gap: 1px;
+  max-height: calc(var(--h) - 34px); margin-bottom: 14px; overflow: hidden; text-shadow: 0 1px 1px rgba(0,0,0,.6); }
+.tranche-texte b { font-family: var(--display); font-weight: 700; font-size: .74rem; color: #f0dcaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tranche-texte small { font-size: .5rem; text-transform: uppercase; letter-spacing: .06em; color: rgba(240,220,170,.65); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tranche-num { position: absolute; bottom: 9px; left: 0; right: 0; text-align: center; font-style: normal; font-family: var(--display); font-weight: 700;
+  font-size: .78rem; color: #f0dcaa; line-height: 1; }
 .tranche-avenir { filter: saturate(.5) brightness(1.5); }
-.tranche-audio::before { content: ""; position: absolute; left: 50%; bottom: 8px; width: 60%; height: 2px; transform: translateX(-50%); background: rgba(240,220,170,.7); border-radius: 1px; }
+.tranche-audio::before { content: ""; position: absolute; left: 50%; bottom: 5px; width: 60%; height: 2px; transform: translateX(-50%); background: rgba(240,220,170,.7); border-radius: 1px; }
 .tranche:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 @media (hover: hover) { .tranche:hover { transform: translateY(-6px); transition: transform .12s; } }
-.serre-livres { width: 10px; height: 36px; align-self: flex-end; margin-bottom: var(--planche); }
+.serre-livres { all: unset; box-sizing: border-box; cursor: pointer; width: 24px; height: 118px; margin: calc(var(--rang) - var(--planche) - 118px) 5px var(--planche) 7px;
+  border-radius: 12px 12px 2px 2px; background: linear-gradient(90deg, #2a1a0f, #4a2f1b 45%, #2a1a0f); box-shadow: inset 0 0 0 1px rgba(217,181,106,.45), 2px 0 4px rgba(0,0,0,.5);
+  display: flex; align-items: center; justify-content: center; }
+.serre-livres span { writing-mode: vertical-rl; transform: rotate(180deg); font-size: .56rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-height: 104px; font-weight: 700; }
+.serre-livres:focus-visible { outline: 2px solid var(--accent); }
+.apercu { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; padding-right: 26px; }
+.apercu .couv { width: 84px; height: 126px; }
+.apercu-serie { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); }
+.apercu-titre { font-size: 1.5rem; margin: 2px 0; }
 .legende-etagere { margin: 6px 2px 0; }
 
 /* ---------- Ambiance : fleurons et grain de papier ---------- */

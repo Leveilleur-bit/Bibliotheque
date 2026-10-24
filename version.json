@@ -1,7 +1,7 @@
 {
-  "version": "35",
-  "date": "2026-10-23",
+  "version": "36",
+  "date": "2026-10-24",
   "nouveautes": [
-    "Grands classiques : une réserve remplace automatiquement un classique écarté, ajouté ou déjà lu"
+    "Étagère plus lisible : serre-livres au nom de l'auteur, nom de la série et numéro du tome sur chaque tranche, aperçu en touchant une tranche"
   ]
 }

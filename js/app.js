@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "35";   // doit correspondre à version.json
+const VERSION_APPLI = "36";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -420,6 +420,40 @@ function voirFiche(l) {
   ouverts.add(l.id);
   allerA(genreDe(l));
   ui.recherche = l.titre; rendre();
+}
+
+/* ---------- Aperçu d'une tranche de l'étagère ---------- */
+function apercuTranche(l, i) {
+  if (!l) return;
+  const tomes = Array.isArray(l.tomes) ? l.tomes : [];
+  const serie = tomes.length > 1;
+  const t = tomes[i];
+  const titreSerie = String(l.titre).replace(/\s*\((série|papier|French Edition)\)/gi, "");
+  ouvrirFenetre(`
+    <button class="btn-discret fermer-coin" data-fen-act="fermer" aria-label="Fermer">✕</button>
+    <div class="apercu">
+      ${couvertureHTML(l)}
+      <div>
+        ${serie ? `<div class="apercu-serie">${esc(titreSerie)} · tome ${i + 1}/${Math.max(tomes.length, Number(l.tomesSerie) || 0)}</div>` : ""}
+        <h2 class="apercu-titre">${esc(serie && t ? t.titre : titreSerie)}</h2>
+        <div class="doux">${esc(l.auteur || "")}</div>
+        <div class="doux petit">${l.support === "audible" ? "Audio" : "Papier"}${t && !t.ecoute ? " · pas encore " + (l.support === "papier" ? "lu" : "écouté") : ""}${l.note ? ` · <span class="etoiles-mini">${"★".repeat(l.note)}<span>${"★".repeat(5 - l.note)}</span></span>` : ""}</div>
+      </div>
+    </div>
+    ${l.resume ? `<p class="resume nr-resume">${esc(l.resume)}</p>` : ""}
+    <div class="actions">
+      ${nomAuteur(l) ? `<button class="btn-sec" data-fen-act="auteur" data-nom="${esc(nomAuteur(l))}">Fiche auteur</button>` : ""}
+      <button class="btn" data-fen-act="voir-fiche" data-id="${esc(l.id)}">Voir la fiche</button>
+    </div>`, dlg => {
+    dlg.onclick = ev => {
+      const el = ev.target.closest("[data-fen-act]");
+      if (!el) return;
+      fermerFenetre();
+      if (el.dataset.fenAct === "voir-fiche") voirFiche(l);
+      if (el.dataset.fenAct === "auteur") ficheAuteur(el.dataset.nom);
+    };
+    chargerCouvertures(dlg);
+  });
 }
 
 /* ---------- Fiche auteur ---------- */
@@ -925,6 +959,7 @@ function agir(btn) {
     case "noter-rapide": noterRapide(); return;
     case "voir-fiche": voirFiche(l); return;
     case "fiche-auteur": ficheAuteur(btn.dataset.nom); return;
+    case "apercu-tranche": apercuTranche(l, +btn.dataset.i || 0); return;
     case "affichage-genre": ui.affichageGenre = btn.dataset.a; sauverUI(); rendre(); return;
     case "tri-genre": ui.triGenre = btn.dataset.t; sauverUI(); rendre(); return;
     case "ajouter": formulaireLivre({ type: btn.dataset.type }); return;

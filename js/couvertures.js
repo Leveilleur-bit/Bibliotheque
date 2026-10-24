@@ -170,20 +170,31 @@ function chargerCouvertures(racine = document) {
 function oublierCouverture(id) { delete cacheCouv[id]; sauverCacheCouv(); }
 
 /* ---------- Vue étagère : une tranche par tome ---------- */
+// Titre court d'une série pour le haut de la tranche (« Le Trône de fer (série) » → « Trône de fer »)
+const titreSerieCourt = l => String(l.titre).replace(/\s*\(.*?\)/g, "").split(/\s[–—:]\s/)[0]
+  .replace(/^(Les?|La|L'|Warhammer 40\.000 -)\s*/i, "").trim();
+// Titre du tome sans le nom de la série devant (« La Guerre des Serpents 2 : L'Ascension… » → « L'Ascension… »)
+const titreTomeCourt = t => String(t).replace(/^.*?\s:\s/, "").trim();
+const tomeGenerique = t => /^(tome|livre|volume)\s+[\divxlc]+$/i.test(String(t).trim()) || /\s\d+$/.test(String(t).trim()) && String(t).trim().split(" ").length <= 4;
+
 function tranchesHTML(l) {
+  const serie = Array.isArray(l.tomes) && l.tomes.length > 1;
   const tomes = Array.isArray(l.tomes) && l.tomes.length ? l.tomes : [{ titre: l.titre, ecoute: l.statut === "lu" || l.statut === "ecoute" }];
   const h = hacher(l.id);
-  const hauteur = 124 + (h % 5) * 9;                     // une série garde la même hauteur
-  const largeurBase = l.support === "audible" ? 26 : 22 + (h >> 3) % 10;
+  const hauteur = 146 + (h % 4) * 8;                      // une série garde la même hauteur
+  const largeurBase = serie ? 31 : (l.support === "audible" ? 28 : 25 + (h >> 3) % 8);
   const couleur = teinte(l.id), fonce = teinte(l.id, -8);
   const audio = l.support === "audible";
+  const nomSerie = titreSerieCourt(l);
   return tomes.map((t, i) => {
-    const titre = tomes.length > 1 ? t.titre : l.titre;
-    const largeur = largeurBase + (hacher(t.titre) % 7);
-    return `<button class="tranche${audio ? " tranche-audio" : ""}${t.ecoute ? "" : " tranche-avenir"}" data-act="voir-fiche" data-id="${esc(l.id)}"
+    const titre = serie ? titreTomeCourt(t.titre) : String(l.titre).replace(/\((série|papier|French Edition)\)/gi, "").trim();
+    const generique = serie && tomeGenerique(titre);
+    const largeur = largeurBase + (hacher(t.titre) % 5);
+    return `<button class="tranche${audio ? " tranche-audio" : ""}${t.ecoute ? "" : " tranche-avenir"}${serie ? " tranche-serie" : ""}" data-act="apercu-tranche" data-id="${esc(l.id)}" data-i="${i}"
         style="--h:${hauteur}px;--w:${largeur}px;--c1:${couleur};--c2:${fonce}"
-        title="${esc(titre)}${l.auteur ? " — " + esc(l.auteur) : ""}" aria-label="${esc(titre)}${tomes.length > 1 ? ", tome " + (i + 1) + " de " + esc(l.titre) : ""}">
-        <span>${esc(String(titre).replace(/\((série|papier|French Edition)\)/gi, "").trim())}</span>
+        aria-label="${esc(serie ? `${nomSerie}, tome ${i + 1} : ${titre}` : titre)}${l.auteur ? ", " + esc(l.auteur) : ""}">
+        <span class="tranche-texte">${serie ? `<small>${esc(nomSerie)}</small>` : ""}<b>${esc(generique ? nomSerie : titre)}</b></span>
+        ${serie ? `<i class="tranche-num">${i + 1}</i>` : ""}
       </button>`;
   }).join("");
 }
@@ -193,10 +204,12 @@ function etagereHTML(livres, messageVide) {
   let html = "", courant = null;
   for (const l of livres) {
     const cle = typeof nomAuteur === "function" ? nomAuteur(l) || "~" : "";
-    if (ui.triGenre !== "titre" && cle !== courant && courant !== null) html += `<span class="serre-livres" aria-hidden="true"></span>`;
+    // un serre-livres gravé au nom de l'auteur ouvre chaque groupe
+    if (ui.triGenre !== "titre" && cle !== courant) html += cle === "~" ? `<span class="serre-livres"><span>Divers</span></span>`
+      : `<button class="serre-livres" data-act="fiche-auteur" data-nom="${esc(cle)}" aria-label="Fiche de l'auteur ${esc(cle)}"><span>${esc(cle)}</span></button>`;
     courant = cle;
     html += tranchesHTML(l);
   }
   return `<div class="etagere" role="list">${html}</div>
-    <p class="doux petit legende-etagere">Les tranches pâles sont à lire ou à écouter ; les tranches marquées d'un trait sont des livres audio. Touche une tranche pour ouvrir sa fiche.</p>`;
+    <p class="doux petit legende-etagere">Chaque auteur commence par un serre-livres à son nom (touche-le pour sa fiche). Le chiffre en bas d'une tranche est le numéro du tome ; un trait sous le chiffre signale un livre audio, une tranche pâle un livre à venir. Touche une tranche pour voir de quoi il s'agit.</p>`;
 }
