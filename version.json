@@ -1,7 +1,9 @@
 {
-  "version": "36",
-  "date": "2026-10-24",
+  "version": "37",
+  "date": "2026-10-28",
   "nouveautes": [
-    "Étagère plus lisible : serre-livres au nom de l'auteur, nom de la série et numéro du tome sur chaque tranche, aperçu en touchant une tranche"
+    "Loupe dans l'en-tête : chercher partout (papier, audio, idées, envies, tomes)",
+    "Scanner un livre : code-barres au dos, titre, auteur et couverture remplis tout seuls",
+    "Mon avis : une phrase à toi sur chaque livre"
   ]
 }
