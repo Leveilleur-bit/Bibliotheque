@@ -4,7 +4,7 @@
    Fichiers de l'appli : cache d'abord, rafraîchis en arrière-plan.
    Incrémente CACHE_VERSION à chaque changement des fichiers.
    ============================================================ */
-const CACHE_VERSION = "v41";
+const CACHE_VERSION = "v42";
 const CACHE_NAME = "ma-bibliotheque-" + CACHE_VERSION;
 const FICHIERS = [
   "./", "./index.html", "./manifest.json", "./css/style.css",
@@ -31,6 +31,15 @@ self.addEventListener("fetch", event => {
   const url = new URL(req.url);
   if (url.hostname === "api.github.com") return;            // synchronisation : jamais en cache
   if (url.hostname === "www.googleapis.com" || url.pathname === "/search.json") return;   // recherche de couvertures : réseau seul
+  if (/huggingface\.co$|hf\.co$|xethub/.test(url.hostname)) return;   // voix naturelles : rangées par l'appli, pas en double ici
+  // moteur des voix naturelles (gros fichiers) : cache à part, gardé d'une version à l'autre
+  if (url.origin === self.location.origin && url.pathname.includes("/vendor/")) {
+    event.respondWith(caches.open("moteur-voix-v1").then(c => c.match(req).then(enCache => enCache || fetch(req).then(rep => {
+      if (rep && rep.ok) c.put(req, rep.clone());
+      return rep;
+    }))));
+    return;
+  }
   // images de couverture : cache à part, gardé d'une version à l'autre
   if (req.destination === "image" && url.origin !== self.location.origin) {
     event.respondWith(caches.open("couvertures-v1").then(c => c.match(req).then(enCache => enCache || fetch(req).then(rep => {

@@ -140,11 +140,13 @@ function afficherChapitre(y = 0) {
         <button class="lis-pastille" data-lis="theme" data-t="papier" aria-label="Papier blanc"></button>
         <button class="lis-pastille" data-lis="theme" data-t="sepia" aria-label="Sépia"></button>
         <button class="lis-pastille" data-lis="theme" data-t="nuit" aria-label="Nuit"></button></div>
-      ${"speechSynthesis" in window ? `<div class="lis-ligne">Voix <select class="lis-voix" aria-label="Voix de lecture">${voixFrancaises().map(v => `<option value="${esc(v.name)}"${v.name === (lireLecture().reglages.voix || "") ? " selected" : ""}>${esc(v.name.replace(/^(Google|Microsoft)\s*/, ""))}</option>`).join("") || "<option>Voix du téléphone</option>"}</select></div>
-      <div class="lis-ligne">Timbre
+      <div class="lis-ligne">Voix <select class="lis-voix" aria-label="Voix de lecture">${optionsVoix()}</select></div>
+      <div class="lis-nat" aria-live="polite"><p class="lis-aide">Voix naturelles…</p></div>
+      ${"speechSynthesis" in window ? `
+      <div class="lis-ligne lis-timbre"${voixNaturelleChoisie() ? " hidden" : ""}>Timbre
         ${[["grave", "Plus grave", 0.93], ["normal", "Naturel", 1], ["clair", "Plus clair", 1.07]].map(([k, t]) => `<button class="lis-choix${(lireLecture().reglages.timbre || "normal") === k ? " actif" : ""}" data-lis="timbre" data-t="${k}">${t}</button>`).join("")}
         <button class="lis-btn" data-lis="essai" aria-label="Écouter un extrait">▶︎ Essai</button></div>
-      <p class="lis-aide">${voixFrancaises().length} voix française${voixFrancaises().length > 1 ? "s" : ""} sur ce téléphone. Pour en ajouter : Paramètres › Synthèse vocale › Services Google › Installer les données vocales › Français.</p>` : ""}
+      ` : ""}
     </div>
     <div class="lis-defil">
       <article class="lis-page">
@@ -195,10 +197,8 @@ function afficherChapitre(y = 0) {
     defil.scrollTop = y * (defil.scrollHeight - defil.clientHeight);
     majProgres();
   });
-  liseuse.el.querySelector(".lis-voix")?.addEventListener("change", ev => {
-    const l = lireLecture(); l.reglages.voix = ev.target.value; ecrireLecture(l);
-    if (audio.joue) { arreterVoix(); parler(); }
-  });
+  liseuse.el.querySelector(".lis-voix")?.addEventListener("change", ev => choisirVoix(ev.target.value));
+  rafraichirVoixNat();
   liseuse.el.onclick = ev => {
     const para = audio.actif && ev.target.closest(".lis-texte > *");
     if (para) { const k = audio.phrases.findIndex(x => x.el === para); if (k >= 0) { arreterVoix(); audio.i = k; jouer(); } return; }
@@ -224,6 +224,9 @@ function afficherChapitre(y = 0) {
         liseuse.el.querySelectorAll('[data-lis="timbre"]').forEach(x => x.classList.toggle("actif", x === b));
         if (audio.joue) { arreterVoix(); parler(); } return;
       case "essai": essaiVoix(); return;
+      case "nat-telecharger": telechargerVoixNat(b.dataset.v); return;
+      case "nat-utiliser": choisirVoix("piper:" + b.dataset.v); return;
+      case "nat-supprimer": supprimerVoixNat(b.dataset.v); return;
     }
   };
 }
@@ -281,14 +284,19 @@ function majLecteur() {
   if (minu) minu.textContent = audio.finChapitre ? "fin ch." : audio.finMinuterie ? Math.max(1, Math.round((audio.finMinuterie - Date.now()) / 60000)) + "′" : "";
 }
 
-function arreterVoix() { if ("speechSynthesis" in window) { audio.jeton = (audio.jeton || 0) + 1; speechSynthesis.cancel(); } }
+function arreterVoix() {
+  audio.jeton = (audio.jeton || 0) + 1;
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  lecteurAudio.pause();
+  if (audio.debloquer) { const f = audio.debloquer; audio.debloquer = null; f(); }
+}
 
 // Les longs paragraphes sont lus phrase par phrase (Chrome coupe les énoncés trop longs)
-function decouper(t) {
+function decouper(t, max = 220) {
   const morceaux = t.match(/[^.!?;:…]+[.!?;:…»"]*\s*/g) || [t];
   const out = [];
   for (const m of morceaux) {
-    if (out.length && (out[out.length - 1] + m).length < 220) out[out.length - 1] += m; else out.push(m);
+    if (out.length && (out[out.length - 1] + m).length < max) out[out.length - 1] += m; else out.push(m);
   }
   return out.map(x => x.trim()).filter(Boolean);
 }
@@ -298,6 +306,9 @@ function parler() {
   const cur = audio.phrases[audio.i];
   if (!cur) return;
   const jeton = (audio.jeton = (audio.jeton || 0) + 1);
+  memoriserPosition();
+  sessionMedia();
+  if (voixNaturelleChoisie()) return parlerNaturel(jeton);
   const morceaux = decouper(cur.t);
   const voix = voixFrancaises();
   const choisie = voix.find(v => v.name === lireLecture().reglages.voix) || voix[0];
@@ -316,7 +327,10 @@ function parler() {
     speechSynthesis.speak(u);
   };
   dire(0);
-  // mémorise le paragraphe pour reprendre l'écoute plus tard
+}
+
+// mémorise le paragraphe pour reprendre l'écoute plus tard
+function memoriserPosition() {
   const l = lireLecture();
   l.pos[liseuse.id] = Object.assign(l.pos[liseuse.id] || {}, { c: liseuse.c, p: audio.i, d: Date.now() });
   ecrireLecture(l);
@@ -349,7 +363,7 @@ function suivantAudio() {
 }
 
 function jouer() {
-  if (!("speechSynthesis" in window)) return toast("Ce téléphone ne sait pas lire le texte à voix haute.");
+  if (!voixNaturelleChoisie() && !("speechSynthesis" in window)) return toast("Ce téléphone ne sait pas lire le texte à voix haute : télécharge une voix naturelle dans « Aa ».");
   audio.actif = true;
   audio.joue = true;
   const lec = liseuse && liseuse.el.querySelector(".lecteur");
@@ -377,17 +391,174 @@ function finMinuterie(message) {
 
 const TIMBRES = { grave: 0.93, normal: 1, clair: 1.07 };   // écarts faibles : au-delà, la voix devient robotique
 // Fait entendre la voix choisie sur une phrase du livre, sans toucher à la lecture en cours
-function essaiVoix() {
-  if (!("speechSynthesis" in window)) return;
+const PHRASE_ESSAI = "Il est des terres que la mer n'a jamais tout à fait rendues aux hommes.";
+async function essaiVoix() {
   const etaitEnLecture = audio.joue;
   pause();
+  if (voixNaturelleChoisie()) {
+    try {
+      const s = await sessionNaturelle(voixNaturelleChoisie());
+      await jouerBlob(await s.predict(PHRASE_ESSAI));
+    } catch { toast("La voix naturelle n'a pas pu démarrer."); }
+    if (etaitEnLecture) jouer();
+    return;
+  }
+  if (!("speechSynthesis" in window)) return;
   const voix = voixFrancaises();
   const r = lireLecture().reglages;
-  const u = new SpeechSynthesisUtterance("Il est des terres que la mer n'a jamais tout à fait rendues aux hommes.");
+  const u = new SpeechSynthesisUtterance(PHRASE_ESSAI);
   u.lang = "fr-FR";
   u.voice = voix.find(v => v.name === r.voix) || voix[0] || null;
   u.rate = audio.vitesse;
   u.pitch = TIMBRES[r.timbre] || 1;
   if (etaitEnLecture) u.onend = () => jouer();
   speechSynthesis.speak(u);
+}
+
+/* ---------- Voix naturelles (Piper) : téléchargées une fois, puis lues hors ligne sur le téléphone ---------- */
+const VOIX_NATURELLES = [
+  { id: "fr_FR-tom-medium", nom: "Tom", genre: "voix d'homme", mo: 64 },
+  { id: "fr_FR-siwis-medium", nom: "Siwis", genre: "voix de femme", mo: 63 },
+  { id: "fr_FR-upmc-medium", nom: "Jessica", genre: "voix de femme", mo: 77 },
+];
+const lecteurAudio = new Audio();
+lecteurAudio.preload = "auto";
+let modulePiper = null, sessionPiper = null, voixSession = null, voixStockees = null;
+
+const voixNaturelleChoisie = () => { const v = lireLecture().reglages.voix || ""; return v.startsWith("piper:") ? v.slice(6) : null; };
+const nomVoixNat = id => (VOIX_NATURELLES.find(v => v.id === id) || {}).nom || id;
+
+async function piper() {
+  if (!modulePiper) modulePiper = await import(new URL("vendor/piper/piper-tts-web.js", document.baseURI).href);
+  return modulePiper;
+}
+async function sessionNaturelle(id, progres) {
+  if (sessionPiper && voixSession === id) return sessionPiper;
+  const m = await piper();
+  m.TtsSession._instance = null;   // changer de voix demande une nouvelle session
+  const base = new URL(".", document.baseURI).href;
+  sessionPiper = await m.TtsSession.create({
+    voiceId: id, progress: progres,
+    wasmPaths: { onnxWasm: base + "vendor/ort/", piperData: base + "vendor/phonemize/piper_phonemize.data", piperWasm: base + "vendor/phonemize/piper_phonemize.wasm" }
+  });
+  voixSession = id;
+  return sessionPiper;
+}
+
+function optionsVoix() {
+  const choisie = lireLecture().reglages.voix || "";
+  const nat = (voixStockees || []).filter(id => VOIX_NATURELLES.some(v => v.id === id));
+  const tel = voixFrancaises();
+  return (nat.length ? `<optgroup label="Voix naturelles">${nat.map(id => `<option value="piper:${id}"${choisie === "piper:" + id ? " selected" : ""}>${esc(nomVoixNat(id))} (naturelle)</option>`).join("")}</optgroup>` : "")
+    + `<optgroup label="Voix du téléphone">${tel.map(v => `<option value="${esc(v.name)}"${v.name === choisie ? " selected" : ""}>${esc(v.name.replace(/^(Google|Microsoft)\s*/, ""))}</option>`).join("") || `<option value="">Voix du téléphone</option>`}</optgroup>`;
+}
+
+async function rafraichirVoixNat() {
+  try { voixStockees = await (await piper()).stored(); } catch { voixStockees = []; }
+  if (!liseuse) return;
+  const sel = liseuse.el.querySelector(".lis-voix");
+  if (sel) sel.innerHTML = optionsVoix();
+  const zone = liseuse.el.querySelector(".lis-nat");
+  if (!zone) return;
+  const choisie = voixNaturelleChoisie();
+  zone.innerHTML = `<p class="lis-aide"><b>Voix naturelles</b> : bien plus humaines que celles du téléphone. À télécharger une fois (en Wi-Fi de préférence), elles marchent ensuite hors ligne.</p>
+    ${VOIX_NATURELLES.map(v => {
+      const la = voixStockees.includes(v.id);
+      return `<div class="lis-nat-ligne"><span><b>${v.nom}</b> · ${v.genre}${la ? "" : ` · ${v.mo} Mo`}</span>
+        ${!la ? `<button class="lis-choix" data-lis="nat-telecharger" data-v="${v.id}">Télécharger</button>`
+          : choisie === v.id ? `<span class="lis-choix actif">En service</span>` : `<button class="lis-choix" data-lis="nat-utiliser" data-v="${v.id}">Utiliser</button>`}
+        ${la ? `<button class="lis-btn" data-lis="nat-supprimer" data-v="${v.id}" aria-label="Supprimer la voix ${v.nom}">🗑</button>` : ""}</div>`;
+    }).join("")}`;
+}
+
+async function telechargerVoixNat(id) {
+  const zone = liseuse && liseuse.el.querySelector(`[data-lis="nat-telecharger"][data-v="${id}"]`);
+  if (zone) { zone.disabled = true; zone.textContent = "0 %"; }
+  try {
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+    const m = await piper();
+    await m.download(id, p => { if (zone && p.total) zone.textContent = Math.round(p.loaded * 100 / p.total) + " %"; });
+    await new Promise(r => setTimeout(r, 400));   // laisse le temps d'écrire le fichier
+    toast(`Voix ${nomVoixNat(id)} téléchargée.`);
+    choisirVoix("piper:" + id);
+  } catch {
+    toast("Téléchargement impossible pour l'instant (connexion ?). Réessaie plus tard.");
+    rafraichirVoixNat();
+  }
+}
+
+async function supprimerVoixNat(id) {
+  try { await (await piper()).remove(id); } catch { /* rien */ }
+  if (voixNaturelleChoisie() === id) { const l = lireLecture(); l.reglages.voix = ""; ecrireLecture(l); }
+  if (voixSession === id) { sessionPiper = null; voixSession = null; }
+  toast(`Voix ${nomVoixNat(id)} supprimée.`);
+  rafraichirVoixNat();
+}
+
+function choisirVoix(valeur) {
+  const l = lireLecture(); l.reglages.voix = valeur; ecrireLecture(l);
+  const t = liseuse && liseuse.el.querySelector(".lis-timbre");
+  if (t) t.hidden = !!voixNaturelleChoisie();
+  rafraichirVoixNat();
+  if (audio.joue) { arreterVoix(); parler(); }
+}
+
+function jouerBlob(blob) {
+  return new Promise(resolve => {
+    const url = URL.createObjectURL(blob);
+    const fin = () => { URL.revokeObjectURL(url); audio.debloquer = null; resolve(); };
+    audio.debloquer = fin;
+    lecteurAudio.src = url;
+    lecteurAudio.playbackRate = audio.vitesse;
+    lecteurAudio.onended = fin;
+    lecteurAudio.onerror = fin;
+    lecteurAudio.play().catch(fin);
+  });
+}
+
+// Lit le paragraphe courant avec la voix naturelle ; prépare la phrase suivante pendant que la précédente est lue
+async function parlerNaturel(jeton) {
+  const pos = liseuse.el.querySelector(".lecteur-pos");
+  let s;
+  try {
+    if (!sessionPiper || voixSession !== voixNaturelleChoisie()) { if (pos) pos.textContent = "Préparation de la voix…"; }
+    s = await sessionNaturelle(voixNaturelleChoisie());
+  } catch {
+    toast("La voix naturelle n'a pas pu démarrer : retour à la voix du téléphone.");
+    const l = lireLecture(); l.reglages.voix = ""; ecrireLecture(l);
+    if (jeton === audio.jeton && audio.joue) parler();
+    return;
+  }
+  if (jeton !== audio.jeton || !audio.joue) return;
+  const cur = audio.phrases[audio.i];
+  majLecteur();
+  cur.el.scrollIntoView({ block: "center", behavior: "smooth" });
+  const morceaux = decouper(cur.t, 320);
+  const cle = `${liseuse.c}:${audio.i}`;
+  let prochain = audio.precharge && audio.precharge.cle === cle ? audio.precharge.p : s.predict(morceaux[0]);
+  audio.precharge = null;
+  for (let k = 0; k < morceaux.length; k++) {
+    let blob;
+    try { blob = await prochain; } catch { blob = null; }
+    if (jeton !== audio.jeton || !audio.joue) return;
+    // prépare la suite : phrase suivante, ou début du paragraphe suivant
+    if (k + 1 < morceaux.length) prochain = s.predict(morceaux[k + 1]);
+    else if (audio.phrases[audio.i + 1]) audio.precharge = { cle: `${liseuse.c}:${audio.i + 1}`, p: s.predict(decouper(audio.phrases[audio.i + 1].t, 320)[0]) };
+    if (blob) await jouerBlob(blob);
+    if (jeton !== audio.jeton || !audio.joue) return;
+  }
+  suivantAudio();
+}
+
+// Commandes sur l'écran verrouillé et dans la barre de notifications
+function sessionMedia() {
+  if (!("mediaSession" in navigator) || !liseuse) return;
+  const e = ecrits().find(x => x.id === liseuse.id);
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({ title: titreChapitreCourt(e.chapitres[liseuse.c].titre), artist: e.auteurs || "", album: e.titre });
+    navigator.mediaSession.setActionHandler("play", () => jouer());
+    navigator.mediaSession.setActionHandler("pause", () => pause());
+    navigator.mediaSession.setActionHandler("nexttrack", () => sauter(1));
+    navigator.mediaSession.setActionHandler("previoustrack", () => sauter(-1));
+  } catch { /* navigateur sans ces commandes */ }
 }
