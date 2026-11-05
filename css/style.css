@@ -526,9 +526,6 @@ body.en-lecture { overflow: hidden; }
 .lis-choix.actif { background: var(--lis-or); color: var(--lis-fond); border-color: var(--lis-or); }
 .lis-aide { margin: 0; font-size: .78rem; color: var(--lis-doux); }
 
-.lis-nat { display: grid; gap: 6px; padding-top: 4px; border-top: 1px solid color-mix(in srgb, var(--lis-texte) 12%, transparent); }
-.lis-nat-ligne { display: flex; align-items: center; gap: 8px; font-size: .9rem; color: var(--lis-texte); }
-.lis-nat-ligne > span:first-child { flex: 1; }
 .lis-reglages { max-height: 70dvh; overflow-y: auto; }
 
 .lis-couverture { display: block; width: min(78%, 340px); margin: 6px auto 26px; border-radius: 4px; box-shadow: 0 14px 34px rgba(0,0,0,.45); }

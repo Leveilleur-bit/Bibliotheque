@@ -142,9 +142,8 @@ function afficherChapitre(y = 0) {
         <button class="lis-pastille" data-lis="theme" data-t="sepia" aria-label="Sépia"></button>
         <button class="lis-pastille" data-lis="theme" data-t="nuit" aria-label="Nuit"></button></div>
       <div class="lis-ligne">Voix <select class="lis-voix" aria-label="Voix de lecture">${optionsVoix()}</select></div>
-      <div class="lis-nat" aria-live="polite"><p class="lis-aide">Voix naturelles…</p></div>
       ${"speechSynthesis" in window ? `
-      <div class="lis-ligne lis-timbre"${voixNaturelleChoisie() ? " hidden" : ""}>Timbre
+      <div class="lis-ligne lis-timbre">Timbre
         ${[["grave", "Plus grave", 0.93], ["normal", "Naturel", 1], ["clair", "Plus clair", 1.07]].map(([k, t]) => `<button class="lis-choix${(lireLecture().reglages.timbre || "normal") === k ? " actif" : ""}" data-lis="timbre" data-t="${k}">${t}</button>`).join("")}
         <button class="lis-btn" data-lis="essai" aria-label="Écouter un extrait">▶︎ Essai</button></div>
       ` : ""}
@@ -200,7 +199,6 @@ function afficherChapitre(y = 0) {
     majProgres();
   });
   liseuse.el.querySelector(".lis-voix")?.addEventListener("change", ev => choisirVoix(ev.target.value));
-  rafraichirVoixNat();
   liseuse.el.onclick = ev => {
     const para = audio.actif && ev.target.closest(".lis-texte > *");
     if (para) { const k = audio.phrases.findIndex(x => x.el === para); if (k >= 0) { arreterVoix(); audio.i = k; jouer(); } return; }
@@ -226,10 +224,6 @@ function afficherChapitre(y = 0) {
         liseuse.el.querySelectorAll('[data-lis="timbre"]').forEach(x => x.classList.toggle("actif", x === b));
         if (audio.joue) { arreterVoix(); parler(); } return;
       case "essai": essaiVoix(); return;
-      case "nat-telecharger": telechargerVoixNat(b.dataset.v); return;
-      case "nat-utiliser": choisirVoix("piper:" + b.dataset.v); return;
-      case "nat-telephone": choisirVoix(""); return;
-      case "nat-supprimer": supprimerVoixNat(b.dataset.v); return;
     }
   };
 }
@@ -291,8 +285,6 @@ function majLecteur() {
 function arreterVoix() {
   audio.jeton = (audio.jeton || 0) + 1;
   if ("speechSynthesis" in window) speechSynthesis.cancel();
-  lecteurAudio.pause();
-  if (audio.debloquer) { const f = audio.debloquer; audio.debloquer = null; f(); }
 }
 
 // Les longs paragraphes sont lus phrase par phrase (Chrome coupe les énoncés trop longs)
@@ -312,7 +304,6 @@ function parler() {
   const jeton = (audio.jeton = (audio.jeton || 0) + 1);
   memoriserPosition();
   sessionMedia();
-  if (voixNaturelleChoisie()) return parlerNaturel(jeton);
   const morceaux = decouper(cur.t);
   const voix = voixFrancaises();
   const choisie = voix.find(v => v.name === lireLecture().reglages.voix) || voix[0];
@@ -367,7 +358,7 @@ function suivantAudio() {
 }
 
 function jouer() {
-  if (!voixNaturelleChoisie() && !("speechSynthesis" in window)) return toast("Ce téléphone ne sait pas lire le texte à voix haute : télécharge une voix naturelle dans « Aa ».");
+  if (!voixNaturelleChoisie() && !("speechSynthesis" in window)) return toast("Ce téléphone ne sait pas lire le texte à voix haute.");
   audio.actif = true;
   audio.joue = true;
   const lec = liseuse && liseuse.el.querySelector(".lecteur");
@@ -400,14 +391,6 @@ const PHRASE_ESSAI = "Il est des terres que la mer n'a jamais tout à fait rendu
 async function essaiVoix() {
   const etaitEnLecture = audio.joue;
   pause();
-  if (voixNaturelleChoisie()) {
-    try {
-      const s = await sessionNaturelle(voixNaturelleChoisie());
-      await jouerBlob(await s.predict(PHRASE_ESSAI));
-    } catch { toast("La voix naturelle n'a pas pu démarrer."); }
-    if (etaitEnLecture) jouer();
-    return;
-  }
   if (!("speechSynthesis" in window)) return;
   const voix = voixFrancaises();
   const r = lireLecture().reglages;
@@ -420,142 +403,17 @@ async function essaiVoix() {
   speechSynthesis.speak(u);
 }
 
-/* ---------- Voix naturelles (Piper) : téléchargées une fois, puis lues hors ligne sur le téléphone ---------- */
-const VOIX_NATURELLES = [
-  { id: "fr_FR-tom-medium", nom: "Tom", genre: "voix d'homme", mo: 64 },
-  { id: "fr_FR-siwis-medium", nom: "Siwis", genre: "voix de femme", mo: 63 },
-  { id: "fr_FR-upmc-medium", nom: "Jessica", genre: "voix de femme", mo: 77 },
-];
-const lecteurAudio = new Audio();
-lecteurAudio.preload = "auto";
-let modulePiper = null, sessionPiper = null, voixSession = null, voixStockees = null;
-
-const voixNaturelleChoisie = () => { const v = lireLecture().reglages.voix || ""; return v.startsWith("piper:") ? v.slice(6) : null; };
-const nomVoixNat = id => (VOIX_NATURELLES.find(v => v.id === id) || {}).nom || id;
-
-async function piper() {
-  if (!modulePiper) modulePiper = await import(new URL("vendor/piper/piper-tts-web.js", document.baseURI).href);
-  return modulePiper;
-}
-async function sessionNaturelle(id, progres) {
-  if (sessionPiper && voixSession === id) return sessionPiper;
-  const m = await piper();
-  m.TtsSession._instance = null;   // changer de voix demande une nouvelle session
-  const base = new URL(".", document.baseURI).href;
-  sessionPiper = await m.TtsSession.create({
-    voiceId: id, progress: progres,
-    wasmPaths: { onnxWasm: base + "vendor/ort/", piperData: base + "vendor/phonemize/piper_phonemize.data", piperWasm: base + "vendor/phonemize/piper_phonemize.wasm" }
-  });
-  voixSession = id;
-  return sessionPiper;
-}
+// Toutes les voix viennent du téléphone (synthèse vocale d'Android)
+const voixNaturelleChoisie = () => null;
 
 function optionsVoix() {
   const choisie = lireLecture().reglages.voix || "";
-  const nat = (voixStockees || []).filter(id => VOIX_NATURELLES.some(v => v.id === id));
-  const tel = voixFrancaises();
-  return (nat.length ? `<optgroup label="Voix naturelles">${nat.map(id => `<option value="piper:${id}"${choisie === "piper:" + id ? " selected" : ""}>${esc(nomVoixNat(id))} (naturelle)</option>`).join("")}</optgroup>` : "")
-    + `<optgroup label="Voix du téléphone"><option value=""${choisie === "" ? " selected" : ""}>Voix du téléphone (par défaut)</option>${tel.map(v => `<option value="${esc(v.name)}"${v.name === choisie ? " selected" : ""}>${esc(v.name.replace(/^(Google|Microsoft)\s*/, ""))}</option>`).join("")}</optgroup>`;
+  return `<option value=""${choisie === "" ? " selected" : ""}>Voix du téléphone (par défaut)</option>`
+    + voixFrancaises().map(v => `<option value="${esc(v.name)}"${v.name === choisie ? " selected" : ""}>${esc(v.name.replace(/^(Google|Microsoft)\s*/, ""))}</option>`).join("");
 }
-
-async function rafraichirVoixNat() {
-  try { voixStockees = await (await piper()).stored(); } catch { voixStockees = []; }
-  if (!liseuse) return;
-  const sel = liseuse.el.querySelector(".lis-voix");
-  if (sel) sel.innerHTML = optionsVoix();
-  const zone = liseuse.el.querySelector(".lis-nat");
-  if (!zone) return;
-  const choisie = voixNaturelleChoisie();
-  zone.innerHTML = `<div class="lis-nat-ligne"><span><b>Voix du téléphone</b> · fluide, mais plus robotique</span>
-      ${choisie ? `<button class="lis-choix" data-lis="nat-telephone">Utiliser</button>` : `<span class="lis-choix actif">En service</span>`}</div>
-    <p class="lis-aide"><b>Voix naturelles (expérimental)</b> : plus humaines, mais calculées par le téléphone lui-même. Sur un téléphone peu puissant, la lecture peut hacher ou faire planter l'appli : reviens alors à la voix du téléphone.</p>
-    ${VOIX_NATURELLES.map(v => {
-      const la = voixStockees.includes(v.id);
-      return `<div class="lis-nat-ligne"><span><b>${v.nom}</b> · ${v.genre}${la ? "" : ` · ${v.mo} Mo`}</span>
-        ${!la ? `<button class="lis-choix" data-lis="nat-telecharger" data-v="${v.id}">Télécharger</button>`
-          : choisie === v.id ? `<span class="lis-choix actif">En service</span>` : `<button class="lis-choix" data-lis="nat-utiliser" data-v="${v.id}">Utiliser</button>`}
-        ${la ? `<button class="lis-btn" data-lis="nat-supprimer" data-v="${v.id}" aria-label="Supprimer la voix ${v.nom}">🗑</button>` : ""}</div>`;
-    }).join("")}`;
-}
-
-async function telechargerVoixNat(id) {
-  const zone = liseuse && liseuse.el.querySelector(`[data-lis="nat-telecharger"][data-v="${id}"]`);
-  if (zone) { zone.disabled = true; zone.textContent = "0 %"; }
-  try {
-    if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
-    const m = await piper();
-    await m.download(id, p => { if (zone && p.total) zone.textContent = Math.round(p.loaded * 100 / p.total) + " %"; });
-    await new Promise(r => setTimeout(r, 400));   // laisse le temps d'écrire le fichier
-    toast(`Voix ${nomVoixNat(id)} téléchargée.`);
-    choisirVoix("piper:" + id);
-  } catch {
-    toast("Téléchargement impossible pour l'instant (connexion ?). Réessaie plus tard.");
-    rafraichirVoixNat();
-  }
-}
-
-async function supprimerVoixNat(id) {
-  try { await (await piper()).remove(id); } catch { /* rien */ }
-  if (voixNaturelleChoisie() === id) { const l = lireLecture(); l.reglages.voix = ""; ecrireLecture(l); }
-  if (voixSession === id) { sessionPiper = null; voixSession = null; }
-  toast(`Voix ${nomVoixNat(id)} supprimée.`);
-  rafraichirVoixNat();
-}
-
 function choisirVoix(valeur) {
   const l = lireLecture(); l.reglages.voix = valeur; ecrireLecture(l);
-  const t = liseuse && liseuse.el.querySelector(".lis-timbre");
-  if (t) t.hidden = !!voixNaturelleChoisie();
-  rafraichirVoixNat();
   if (audio.joue) { arreterVoix(); parler(); }
-}
-
-function jouerBlob(blob) {
-  return new Promise(resolve => {
-    const url = URL.createObjectURL(blob);
-    const fin = () => { URL.revokeObjectURL(url); audio.debloquer = null; resolve(); };
-    audio.debloquer = fin;
-    lecteurAudio.src = url;
-    lecteurAudio.playbackRate = audio.vitesse;
-    lecteurAudio.onended = fin;
-    lecteurAudio.onerror = fin;
-    lecteurAudio.play().catch(fin);
-  });
-}
-
-// Lit le paragraphe courant avec la voix naturelle ; prépare la phrase suivante pendant que la précédente est lue
-async function parlerNaturel(jeton) {
-  const pos = liseuse.el.querySelector(".lecteur-pos");
-  let s;
-  try {
-    if (!sessionPiper || voixSession !== voixNaturelleChoisie()) { if (pos) pos.textContent = "Préparation de la voix…"; }
-    s = await sessionNaturelle(voixNaturelleChoisie());
-    try { sessionStorage.setItem("voixNatEnCours", "1"); localStorage.setItem("voixNatEnCours", String(Date.now())); } catch { /* rien */ }
-  } catch {
-    toast("La voix naturelle n'a pas pu démarrer : retour à la voix du téléphone.");
-    const l = lireLecture(); l.reglages.voix = ""; ecrireLecture(l);
-    if (jeton === audio.jeton && audio.joue) parler();
-    return;
-  }
-  if (jeton !== audio.jeton || !audio.joue) return;
-  const cur = audio.phrases[audio.i];
-  majLecteur();
-  cur.el.scrollIntoView({ block: "center", behavior: "smooth" });
-  const morceaux = decouper(cur.t, 320);
-  const cle = `${liseuse.c}:${audio.i}`;
-  let prochain = audio.precharge && audio.precharge.cle === cle ? audio.precharge.p : s.predict(morceaux[0]);
-  audio.precharge = null;
-  for (let k = 0; k < morceaux.length; k++) {
-    let blob;
-    try { blob = await prochain; } catch { blob = null; }
-    if (jeton !== audio.jeton || !audio.joue) return;
-    // prépare la suite : phrase suivante, ou début du paragraphe suivant
-    if (k + 1 < morceaux.length) prochain = s.predict(morceaux[k + 1]);
-    else if (audio.phrases[audio.i + 1]) audio.precharge = { cle: `${liseuse.c}:${audio.i + 1}`, p: s.predict(decouper(audio.phrases[audio.i + 1].t, 320)[0]) };
-    if (blob) await jouerBlob(blob);
-    if (jeton !== audio.jeton || !audio.joue) return;
-  }
-  suivantAudio();
 }
 
 // Commandes sur l'écran verrouillé et dans la barre de notifications
@@ -571,19 +429,14 @@ function sessionMedia() {
   } catch { /* navigateur sans ces commandes */ }
 }
 
-// Au démarrage : une voix naturelle était en train de lire et l'appli s'est fermée brutalement
-// (plantage, mémoire) → on repasse sur la voix du téléphone pour ne pas replanter.
+// Les voix naturelles ont été retirées : on libère la place qu'elles occupaient sur le téléphone
 (() => {
   try {
-    const t = Number(localStorage.getItem("voixNatEnCours") || 0);
-    if (t && !sessionStorage.getItem("voixNatEnCours")) {
-      localStorage.removeItem("voixNatEnCours");
-      const l = lireLecture();
-      if ((l.reglages.voix || "").startsWith("piper:")) {
-        l.reglages.voix = ""; ecrireLecture(l);
-        setTimeout(() => toast("La voix naturelle a fait planter l'appli : retour à la voix du téléphone."), 1200);
-      }
-    }
+    const l = lireLecture();
+    if ((l.reglages.voix || "").startsWith("piper:")) { l.reglages.voix = ""; ecrireLecture(l); }
+    localStorage.removeItem("voixNatEnCours");
+    if (navigator.storage && navigator.storage.getDirectory) navigator.storage.getDirectory().then(d => d.removeEntry("piper", { recursive: true })).catch(() => {});
+    if (window.caches) caches.delete("moteur-voix-v1");
   } catch { /* rien */ }
 })();
 
