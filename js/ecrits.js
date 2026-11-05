@@ -40,9 +40,9 @@ function vueEcrits() {
       return `
       <article class="livre ecrit">
         <div class="ecrit-tete">
-          <span class="couv ecrit-couv" style="--c1:${teinte(e.id)};--c2:${teinte(e.id, -12)}">
-            <span class="couv-maison"><span class="couv-titre">${esc(e.titre)}</span><span class="couv-auteur">${esc(e.auteurs || "")}</span></span>
-          </span>
+          <button class="couv ecrit-couv" data-act="lire-ecrit" data-id="${esc(e.id)}" aria-label="Lire ${esc(e.titre)}" style="--c1:${teinte(e.id)};--c2:${teinte(e.id, -12)}">
+            ${e.couverture ? `<img src="${esc(e.couverture)}" alt="">` : `<span class="couv-maison"><span class="couv-titre">${esc(e.titre)}</span><span class="couv-auteur">${esc(e.auteurs || "")}</span></span>`}
+          </button>
           <div>
             <span class="livre-titre">${esc(e.titre)}</span>
             <span class="livre-meta">${esc(e.auteurs || "")}${e.genre ? " · " + esc(e.genre) : ""}</span>
@@ -150,6 +150,7 @@ function afficherChapitre(y = 0) {
     </div>
     <div class="lis-defil">
       <article class="lis-page">
+        ${liseuse.c === 0 && e.couverture ? `<img class="lis-couverture" src="${esc(e.couverture)}" alt="Couverture : ${esc(e.titre)}, ${esc(e.auteurs || "")}">` : ""}
         <p class="lis-surtitre">${esc(e.titre)}</p>
         <h2 class="lis-chapitre">${esc(ch.titre).replace(/\s[—–-]\s/, "<br><span>").replace(/$/, ch.titre.match(/\s[—–-]\s/) ? "</span>" : "")}</h2>
         <p class="ornement" aria-hidden="true">❦</p>
