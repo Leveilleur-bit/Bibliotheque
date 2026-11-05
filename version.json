@@ -1,7 +1,7 @@
 {
-  "version": "39",
+  "version": "40",
   "date": "2026-11-05",
   "nouveautes": [
-    "Écrits : un lecteur audio comme Audible — la voix du téléphone lit le livre, paragraphe surligné, vitesse, minuterie d'arrêt, reprise là où tu t'étais arrêté"
+    "Lecteur des écrits : timbre de voix (grave, normal, clair), bouton d'essai, et nombre de voix françaises du téléphone"
   ]
 }

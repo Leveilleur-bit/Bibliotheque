@@ -140,7 +140,11 @@ function afficherChapitre(y = 0) {
         <button class="lis-pastille" data-lis="theme" data-t="papier" aria-label="Papier blanc"></button>
         <button class="lis-pastille" data-lis="theme" data-t="sepia" aria-label="Sépia"></button>
         <button class="lis-pastille" data-lis="theme" data-t="nuit" aria-label="Nuit"></button></div>
-      ${"speechSynthesis" in window ? `<div class="lis-ligne">Voix <select class="lis-voix" aria-label="Voix de lecture">${voixFrancaises().map(v => `<option value="${esc(v.name)}"${v.name === (lireLecture().reglages.voix || "") ? " selected" : ""}>${esc(v.name.replace(/^(Google|Microsoft)\s*/, ""))}</option>`).join("") || "<option>Voix du téléphone</option>"}</select></div>` : ""}
+      ${"speechSynthesis" in window ? `<div class="lis-ligne">Voix <select class="lis-voix" aria-label="Voix de lecture">${voixFrancaises().map(v => `<option value="${esc(v.name)}"${v.name === (lireLecture().reglages.voix || "") ? " selected" : ""}>${esc(v.name.replace(/^(Google|Microsoft)\s*/, ""))}</option>`).join("") || "<option>Voix du téléphone</option>"}</select></div>
+      <div class="lis-ligne">Timbre
+        ${[["grave", "Grave", 0.8], ["normal", "Normal", 1], ["clair", "Clair", 1.2]].map(([k, t]) => `<button class="lis-choix${(lireLecture().reglages.timbre || "normal") === k ? " actif" : ""}" data-lis="timbre" data-t="${k}">${t}</button>`).join("")}
+        <button class="lis-btn" data-lis="essai" aria-label="Écouter un extrait">▶︎ Essai</button></div>
+      <p class="lis-aide">${voixFrancaises().length} voix française${voixFrancaises().length > 1 ? "s" : ""} sur ce téléphone. Pour en ajouter : Paramètres › Synthèse vocale › Services Google › Installer les données vocales › Français.</p>` : ""}
     </div>
     <div class="lis-defil">
       <article class="lis-page">
@@ -216,6 +220,10 @@ function afficherChapitre(y = 0) {
       case "avant": sauter(1); return;
       case "vitesse": { const v = [0.8, 1, 1.15, 1.3, 1.5]; audio.vitesse = v[(v.indexOf(audio.vitesse) + 1) % v.length]; l.reglages.vitesse = audio.vitesse; ecrireLecture(l); b.textContent = String(audio.vitesse).replace(".", ",") + "×"; if (audio.joue) { arreterVoix(); parler(); } return; }
       case "minuterie": changerMinuterie(); return;
+      case "timbre": l.reglages.timbre = b.dataset.t; ecrireLecture(l);
+        liseuse.el.querySelectorAll('[data-lis="timbre"]').forEach(x => x.classList.toggle("actif", x === b));
+        if (audio.joue) { arreterVoix(); parler(); } return;
+      case "essai": essaiVoix(); return;
     }
   };
 }
@@ -302,6 +310,7 @@ function parler() {
     u.lang = "fr-FR";
     if (choisie) u.voice = choisie;
     u.rate = audio.vitesse;
+    u.pitch = TIMBRES[lireLecture().reglages.timbre] || 1;
     u.onend = () => dire(k + 1);
     u.onerror = ev => { if (ev.error !== "interrupted" && ev.error !== "canceled") dire(k + 1); };
     speechSynthesis.speak(u);
@@ -364,4 +373,21 @@ function finMinuterie(message) {
   audio.finMinuterie = 0; audio.finChapitre = false;
   pause();
   if (message) toast(message);
+}
+
+const TIMBRES = { grave: 0.8, normal: 1, clair: 1.2 };
+// Fait entendre la voix choisie sur une phrase du livre, sans toucher à la lecture en cours
+function essaiVoix() {
+  if (!("speechSynthesis" in window)) return;
+  const etaitEnLecture = audio.joue;
+  pause();
+  const voix = voixFrancaises();
+  const r = lireLecture().reglages;
+  const u = new SpeechSynthesisUtterance("Il est des terres que la mer n'a jamais tout à fait rendues aux hommes.");
+  u.lang = "fr-FR";
+  u.voice = voix.find(v => v.name === r.voix) || voix[0] || null;
+  u.rate = audio.vitesse;
+  u.pitch = TIMBRES[r.timbre] || 1;
+  if (etaitEnLecture) u.onend = () => jouer();
+  speechSynthesis.speak(u);
 }

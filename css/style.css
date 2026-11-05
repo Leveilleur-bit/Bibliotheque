@@ -521,3 +521,7 @@ body.en-lecture { overflow: hidden; }
 .lecteur-boutons small { font-size: .62rem; margin-left: 1px; }
 .lis-texte .lu-actif, .lis-chapitre.lu-actif { background: color-mix(in srgb, var(--lis-or) 16%, transparent); border-radius: 4px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--lis-or) 16%, transparent); }
 .lis-voix { flex: 1; min-width: 0; background: transparent; color: var(--lis-texte); border: 1px solid color-mix(in srgb, var(--lis-texte) 30%, transparent); border-radius: 8px; padding: 6px; font: inherit; }
+
+.lis-choix { all: unset; cursor: pointer; padding: 6px 10px; border-radius: 16px; font-size: .85rem; color: var(--lis-texte); border: 1px solid color-mix(in srgb, var(--lis-texte) 25%, transparent); }
+.lis-choix.actif { background: var(--lis-or); color: var(--lis-fond); border-color: var(--lis-or); }
+.lis-aide { margin: 0; font-size: .78rem; color: var(--lis-doux); }
