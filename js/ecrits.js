@@ -168,9 +168,15 @@ function afficherChapitre(y = 0) {
     <div class="lecteur" ${audio.actif ? "" : "hidden"}>
       <div class="lecteur-info"><b>${esc(titreChapitreCourt(ch.titre))}</b><span class="lecteur-pos"></span></div>
       <div class="lecteur-progres"><span></span></div>
+      <div class="lecteur-menu-minu" hidden>
+        <span>Arrêter l'écoute dans</span>
+        ${[[15, "15 min"], [30, "30 min"], [45, "45 min"], [60, "1 h"]].map(([m, t]) => `<button class="lis-choix" data-lis="minu" data-m="${m}">${t}</button>`).join("")}
+        <button class="lis-choix" data-lis="minu" data-m="chapitre">Fin du chapitre</button>
+        <button class="lis-choix" data-lis="minu" data-m="0">Désactiver</button>
+      </div>
       <div class="lecteur-boutons">
         <button class="lis-btn" data-lis="ecran-noir" aria-label="Écran noir : la lecture continue, écran au minimum">◐</button>
-        <button class="lis-btn" data-lis="minuterie" aria-label="Minuterie d'arrêt">☾<small class="lecteur-minu"></small></button>
+        <button class="lis-btn lecteur-minuterie" data-lis="minuterie" aria-label="Minuterie : arrêter l'écoute après un temps choisi">⏲<small class="lecteur-minu"></small></button>
         <button class="lis-btn" data-lis="arriere" aria-label="Paragraphe précédent">⏮</button>
         <button class="lis-btn lecteur-play" data-lis="play" aria-label="Lecture ou pause">${audio.joue ? "⏸" : "▶"}</button>
         <button class="lis-btn" data-lis="avant" aria-label="Paragraphe suivant">⏭</button>
@@ -220,7 +226,8 @@ function afficherChapitre(y = 0) {
       case "arriere": sauter(-1); return;
       case "avant": sauter(1); return;
       case "vitesse": { const v = [0.8, 1, 1.15, 1.3, 1.5]; audio.vitesse = v[(v.indexOf(audio.vitesse) + 1) % v.length]; l.reglages.vitesse = audio.vitesse; ecrireLecture(l); b.textContent = String(audio.vitesse).replace(".", ",") + "×"; if (audio.joue) { arreterVoix(); parler(); } return; }
-      case "minuterie": changerMinuterie(); return;
+      case "minuterie": { const m = liseuse.el.querySelector(".lecteur-menu-minu"); m.hidden = !m.hidden; return; }
+      case "minu": regler(b.dataset.m); liseuse.el.querySelector(".lecteur-menu-minu").hidden = true; return;
       case "ecran-noir": ecranNoir(); return;
       case "timbre": l.reglages.timbre = b.dataset.t; ecrireLecture(l);
         liseuse.el.querySelectorAll('[data-lis="timbre"]').forEach(x => x.classList.toggle("actif", x === b));
@@ -282,7 +289,8 @@ function majLecteur() {
   const pr = liseuse.el.querySelector(".lecteur-progres span");
   if (pr) pr.style.width = (n ? Math.round(audio.i / n * 100) : 0) + "%";
   const minu = liseuse.el.querySelector(".lecteur-minu");
-  if (minu) minu.textContent = audio.finChapitre ? "fin ch." : audio.finMinuterie ? Math.max(1, Math.round((audio.finMinuterie - Date.now()) / 60000)) + "′" : "";
+  if (minu) minu.textContent = audio.finChapitre ? "fin ch." : audio.finMinuterie ? Math.max(1, Math.ceil((audio.finMinuterie - Date.now()) / 60000)) + " min" : "";
+  liseuse.el.querySelector(".lecteur-minuterie")?.classList.toggle("actif", !!(audio.finChapitre || audio.finMinuterie));
 }
 
 function arreterVoix() {
@@ -320,7 +328,7 @@ function parler() {
     if (choisie) u.voice = choisie;
     u.rate = audio.vitesse;
     u.pitch = TIMBRES[lireLecture().reglages.timbre] || 1;
-    u.onend = () => dire(k + 1);
+    u.onend = () => (audio.finMinuterie && Date.now() >= audio.finMinuterie) ? finMinuterie("Bonne nuit : l'écoute s'est arrêtée.") : dire(k + 1);
     u.onerror = ev => { if (ev.error !== "interrupted" && ev.error !== "canceled") dire(k + 1); };
     speechSynthesis.speak(u);
   };
@@ -373,17 +381,23 @@ function jouer() {
 function pause() { audio.joue = false; arreterVoix(); maintenirEnVeille(false); majLecteur(); try { localStorage.removeItem("voixNatEnCours"); } catch { /* rien */ } }
 function sauter(d) { arreterVoix(); audio.i = Math.max(0, Math.min(audio.phrases.length - 1, audio.i + d)); audio.joue ? parler() : majLecteur(); }
 
-function changerMinuterie() {
-  // aucune → 15 min → 30 min → fin du chapitre → aucune
-  if (!audio.finMinuterie && !audio.finChapitre) audio.finMinuterie = Date.now() + 15 * 60e3;
-  else if (audio.finMinuterie && audio.finMinuterie - Date.now() <= 15 * 60e3) audio.finMinuterie = Date.now() + 30 * 60e3;
-  else if (audio.finMinuterie) { audio.finMinuterie = 0; audio.finChapitre = true; }
-  else audio.finChapitre = false;
-  toast(audio.finChapitre ? "Arrêt à la fin du chapitre." : audio.finMinuterie ? `Arrêt dans ${Math.round((audio.finMinuterie - Date.now()) / 60000)} minutes.` : "Minuterie désactivée.");
+// Minuterie d'arrêt : 15, 30, 45 min, 1 h ou fin du chapitre. L'écoute s'arrête à la fin de la phrase en cours.
+let tictac = null;
+function regler(m) {
+  audio.finChapitre = m === "chapitre";
+  audio.finMinuterie = /^\d+$/.test(m) && +m > 0 ? Date.now() + +m * 60e3 : 0;
+  clearInterval(tictac);
+  if (audio.finMinuterie) tictac = setInterval(() => {
+    majLecteur();
+    // le temps est écoulé : on coupe à la fin du morceau de phrase en cours
+    if (audio.finMinuterie && Date.now() >= audio.finMinuterie && audio.joue && "speechSynthesis" in window && !speechSynthesis.speaking) finMinuterie("Bonne nuit : l'écoute s'est arrêtée.");
+  }, 15e3);
+  toast(audio.finChapitre ? "L'écoute s'arrêtera à la fin du chapitre." : audio.finMinuterie ? `L'écoute s'arrêtera dans ${m >= 60 ? "1 heure" : m + " minutes"}.` : "Minuterie désactivée.");
+  if ((audio.finMinuterie || audio.finChapitre) && !audio.joue) jouer();
   majLecteur();
 }
 function finMinuterie(message) {
-  audio.finMinuterie = 0; audio.finChapitre = false;
+  audio.finMinuterie = 0; audio.finChapitre = false; clearInterval(tictac);
   pause();
   if (message) toast(message);
 }

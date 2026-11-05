@@ -534,3 +534,8 @@ body.en-lecture { overflow: hidden; }
 .ecran-noir { position: fixed; inset: 0; z-index: 30; background: #000; display: grid; place-items: center; cursor: pointer; }
 .ecran-noir p { color: #2a2a2a; text-align: center; font-size: .9rem; line-height: 1.6; transition: color .3s; }
 .ecran-noir.ecran-noir-indice p { color: #8a7656; }
+
+.lecteur-menu-minu { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 4px 0; font-size: .85rem; color: var(--lis-doux); }
+.lecteur-menu-minu > span { width: 100%; }
+.lecteur-minuterie.actif { color: var(--lis-or); }
+.lecteur-minuterie small { display: block; font-size: .62rem; line-height: 1; }
