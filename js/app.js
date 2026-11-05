@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "37";   // doit correspondre à version.json
+const VERSION_APPLI = "38";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -89,7 +89,7 @@ const FILTRES_AUDIBLE = [
   ["en_cours", "En cours"],
   ["ecoute", "Écouté"]
 ];
-const TITRES_VUES = { accueil: "Ma Bibliothèque", audible: "Audible", fantasy: "Fantasy", sf: "Science-fiction", autre: "Autres lectures", envies: "Envies", propositions: "Propositions", reglages: "Réglages" };
+const TITRES_VUES = { accueil: "Ma Bibliothèque", audible: "Audible", fantasy: "Fantasy", sf: "Science-fiction", autre: "Autres lectures", envies: "Envies", propositions: "Propositions", ecrits: "Mes écrits", reglages: "Réglages" };
 const GENRES = { fantasy: "Fantasy", sf: "Science-fiction", autre: "Autres lectures" };
 const genreDe = l => l.genre === "fantasy" || l.genre === "sf" ? l.genre : "autre";
 const FILTRES_GENRE = [
@@ -789,12 +789,12 @@ function vueReglages() {
 
 function rendre() {
   const vue = $("#vue");
-  const vues = { accueil: vueAccueil, audible: vueAudible, fantasy: () => vueGenre("fantasy"), sf: () => vueGenre("sf"), autre: () => vueGenre("autre"), envies: vueEnvies, propositions: vuePropositions, reglages: vueReglages };
+  const vues = { accueil: vueAccueil, audible: vueAudible, fantasy: () => vueGenre("fantasy"), sf: () => vueGenre("sf"), autre: () => vueGenre("autre"), envies: vueEnvies, propositions: vuePropositions, ecrits: vueEcrits, reglages: vueReglages };
   vue.innerHTML = (vues[ui.vue] || vueAccueil)();
   chargerCouvertures(vue);
   const genre = ["fantasy", "sf", "autre"].includes(ui.vue) ? ui.vue : null;
   // Fond d'ambiance : chaque onglet a le sien
-  document.body.dataset.fond = genre || { accueil: "accueil", envies: "envies", propositions: "idees", reglages: "reglages" }[ui.vue] || "audible";
+  document.body.dataset.fond = genre || { accueil: "accueil", envies: "envies", propositions: "idees", ecrits: "ecrits", reglages: "reglages" }[ui.vue] || "audible";
   vue.classList.add("sur-image");
   $("#titre-vue").textContent = ui.vue === "audible" ? "Audible" : TITRES_VUES[ui.vue];
   document.querySelectorAll(".barre button").forEach(b => b.setAttribute("aria-current", b.dataset.vue === ui.vue ? "page" : "false"));
@@ -968,6 +968,8 @@ function agir(btn) {
     case "tri-genre": ui.triGenre = btn.dataset.t; sauverUI(); rendre(); return;
     case "ajouter": formulaireLivre({ type: btn.dataset.type }); return;
     case "scanner": scannerLivre(); return;
+    case "lire-ecrit": ouvrirLiseuse(btn.dataset.id); return;
+    case "sommaire-ecrit": { const e = ecrits().find(x => x.id === btn.dataset.id); if (e) sommaireEcrit(e); return; }
     case "modifier": if (l) formulaireLivre({ l }); return;
     case "credit": changerSolde(+btn.dataset.d); sauvegarder(); return;
     case "suppr": suppressionEnAttente = id; rendre(); return;

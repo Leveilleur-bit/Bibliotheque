@@ -1,9 +1,7 @@
 {
-  "version": "37",
-  "date": "2026-10-28",
+  "version": "38",
+  "date": "2026-11-05",
   "nouveautes": [
-    "Loupe dans l'en-tête : chercher partout (papier, audio, idées, envies, tomes)",
-    "Scanner un livre : code-barres au dos, titre, auteur et couverture remplis tout seuls",
-    "Mon avis : une phrase à toi sur chaque livre"
+    "Nouvel onglet « Écrits » : les livres écrits avec Claude, avec une liseuse (sépia, papier ou nuit, taille du texte, reprise là où tu t'étais arrêté)"
   ]
 }
