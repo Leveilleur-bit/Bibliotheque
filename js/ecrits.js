@@ -228,6 +228,7 @@ function afficherChapitre(y = 0) {
       case "essai": essaiVoix(); return;
       case "nat-telecharger": telechargerVoixNat(b.dataset.v); return;
       case "nat-utiliser": choisirVoix("piper:" + b.dataset.v); return;
+      case "nat-telephone": choisirVoix(""); return;
       case "nat-supprimer": supprimerVoixNat(b.dataset.v); return;
     }
   };
@@ -373,7 +374,7 @@ function jouer() {
   arreterVoix();
   parler();
 }
-function pause() { audio.joue = false; arreterVoix(); majLecteur(); }
+function pause() { audio.joue = false; arreterVoix(); majLecteur(); try { localStorage.removeItem("voixNatEnCours"); } catch { /* rien */ } }
 function sauter(d) { arreterVoix(); audio.i = Math.max(0, Math.min(audio.phrases.length - 1, audio.i + d)); audio.joue ? parler() : majLecteur(); }
 
 function changerMinuterie() {
@@ -452,7 +453,7 @@ function optionsVoix() {
   const nat = (voixStockees || []).filter(id => VOIX_NATURELLES.some(v => v.id === id));
   const tel = voixFrancaises();
   return (nat.length ? `<optgroup label="Voix naturelles">${nat.map(id => `<option value="piper:${id}"${choisie === "piper:" + id ? " selected" : ""}>${esc(nomVoixNat(id))} (naturelle)</option>`).join("")}</optgroup>` : "")
-    + `<optgroup label="Voix du téléphone">${tel.map(v => `<option value="${esc(v.name)}"${v.name === choisie ? " selected" : ""}>${esc(v.name.replace(/^(Google|Microsoft)\s*/, ""))}</option>`).join("") || `<option value="">Voix du téléphone</option>`}</optgroup>`;
+    + `<optgroup label="Voix du téléphone"><option value=""${choisie === "" ? " selected" : ""}>Voix du téléphone (par défaut)</option>${tel.map(v => `<option value="${esc(v.name)}"${v.name === choisie ? " selected" : ""}>${esc(v.name.replace(/^(Google|Microsoft)\s*/, ""))}</option>`).join("")}</optgroup>`;
 }
 
 async function rafraichirVoixNat() {
@@ -463,7 +464,9 @@ async function rafraichirVoixNat() {
   const zone = liseuse.el.querySelector(".lis-nat");
   if (!zone) return;
   const choisie = voixNaturelleChoisie();
-  zone.innerHTML = `<p class="lis-aide"><b>Voix naturelles</b> : bien plus humaines que celles du téléphone. À télécharger une fois (en Wi-Fi de préférence), elles marchent ensuite hors ligne.</p>
+  zone.innerHTML = `<div class="lis-nat-ligne"><span><b>Voix du téléphone</b> · fluide, mais plus robotique</span>
+      ${choisie ? `<button class="lis-choix" data-lis="nat-telephone">Utiliser</button>` : `<span class="lis-choix actif">En service</span>`}</div>
+    <p class="lis-aide"><b>Voix naturelles (expérimental)</b> : plus humaines, mais calculées par le téléphone lui-même. Sur un téléphone peu puissant, la lecture peut hacher ou faire planter l'appli : reviens alors à la voix du téléphone.</p>
     ${VOIX_NATURELLES.map(v => {
       const la = voixStockees.includes(v.id);
       return `<div class="lis-nat-ligne"><span><b>${v.nom}</b> · ${v.genre}${la ? "" : ` · ${v.mo} Mo`}</span>
@@ -525,6 +528,7 @@ async function parlerNaturel(jeton) {
   try {
     if (!sessionPiper || voixSession !== voixNaturelleChoisie()) { if (pos) pos.textContent = "Préparation de la voix…"; }
     s = await sessionNaturelle(voixNaturelleChoisie());
+    try { sessionStorage.setItem("voixNatEnCours", "1"); localStorage.setItem("voixNatEnCours", String(Date.now())); } catch { /* rien */ }
   } catch {
     toast("La voix naturelle n'a pas pu démarrer : retour à la voix du téléphone.");
     const l = lireLecture(); l.reglages.voix = ""; ecrireLecture(l);
@@ -564,3 +568,19 @@ function sessionMedia() {
     navigator.mediaSession.setActionHandler("previoustrack", () => sauter(-1));
   } catch { /* navigateur sans ces commandes */ }
 }
+
+// Au démarrage : une voix naturelle était en train de lire et l'appli s'est fermée brutalement
+// (plantage, mémoire) → on repasse sur la voix du téléphone pour ne pas replanter.
+(() => {
+  try {
+    const t = Number(localStorage.getItem("voixNatEnCours") || 0);
+    if (t && !sessionStorage.getItem("voixNatEnCours")) {
+      localStorage.removeItem("voixNatEnCours");
+      const l = lireLecture();
+      if ((l.reglages.voix || "").startsWith("piper:")) {
+        l.reglages.voix = ""; ecrireLecture(l);
+        setTimeout(() => toast("La voix naturelle a fait planter l'appli : retour à la voix du téléphone."), 1200);
+      }
+    }
+  } catch { /* rien */ }
+})();
