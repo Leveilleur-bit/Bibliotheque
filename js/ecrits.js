@@ -142,7 +142,7 @@ function afficherChapitre(y = 0) {
         <button class="lis-pastille" data-lis="theme" data-t="nuit" aria-label="Nuit"></button></div>
       ${"speechSynthesis" in window ? `<div class="lis-ligne">Voix <select class="lis-voix" aria-label="Voix de lecture">${voixFrancaises().map(v => `<option value="${esc(v.name)}"${v.name === (lireLecture().reglages.voix || "") ? " selected" : ""}>${esc(v.name.replace(/^(Google|Microsoft)\s*/, ""))}</option>`).join("") || "<option>Voix du téléphone</option>"}</select></div>
       <div class="lis-ligne">Timbre
-        ${[["grave", "Grave", 0.8], ["normal", "Normal", 1], ["clair", "Clair", 1.2]].map(([k, t]) => `<button class="lis-choix${(lireLecture().reglages.timbre || "normal") === k ? " actif" : ""}" data-lis="timbre" data-t="${k}">${t}</button>`).join("")}
+        ${[["grave", "Plus grave", 0.93], ["normal", "Naturel", 1], ["clair", "Plus clair", 1.07]].map(([k, t]) => `<button class="lis-choix${(lireLecture().reglages.timbre || "normal") === k ? " actif" : ""}" data-lis="timbre" data-t="${k}">${t}</button>`).join("")}
         <button class="lis-btn" data-lis="essai" aria-label="Écouter un extrait">▶︎ Essai</button></div>
       <p class="lis-aide">${voixFrancaises().length} voix française${voixFrancaises().length > 1 ? "s" : ""} sur ce téléphone. Pour en ajouter : Paramètres › Synthèse vocale › Services Google › Installer les données vocales › Français.</p>` : ""}
     </div>
@@ -375,7 +375,7 @@ function finMinuterie(message) {
   if (message) toast(message);
 }
 
-const TIMBRES = { grave: 0.8, normal: 1, clair: 1.2 };
+const TIMBRES = { grave: 0.93, normal: 1, clair: 1.07 };   // écarts faibles : au-delà, la voix devient robotique
 // Fait entendre la voix choisie sur une phrase du livre, sans toucher à la lecture en cours
 function essaiVoix() {
   if (!("speechSynthesis" in window)) return;

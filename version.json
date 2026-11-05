@@ -1,7 +1,7 @@
 {
-  "version": "40",
+  "version": "41",
   "date": "2026-11-05",
   "nouveautes": [
-    "Lecteur des écrits : timbre de voix (grave, normal, clair), bouton d'essai, et nombre de voix françaises du téléphone"
+    "Lecteur des écrits : timbre plus léger, la voix reste naturelle"
   ]
 }
