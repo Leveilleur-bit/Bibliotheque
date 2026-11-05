@@ -1,7 +1,7 @@
 {
-  "version": "45",
+  "version": "46",
   "date": "2026-11-05",
   "nouveautes": [
-    "Liseuse : retour facile à la voix du téléphone ; si une voix naturelle fait planter l'appli, elle est désactivée automatiquement"
+    "Liseuse : la lecture à voix haute continue écran éteint, avec les commandes sur l'écran verrouillé"
   ]
 }

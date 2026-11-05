@@ -236,6 +236,7 @@ function afficherChapitre(y = 0) {
 
 function fermerLiseuse(sansRendu) {
   if (!liseuse) return;
+  maintenirEnVeille(false);
   pause();
   audio.actif = false;
   liseuse.el.remove();
@@ -372,9 +373,10 @@ function jouer() {
   const lec = liseuse && liseuse.el.querySelector(".lecteur");
   if (lec) lec.hidden = false;
   arreterVoix();
+  if (!voixNaturelleChoisie()) maintenirEnVeille(true);
   parler();
 }
-function pause() { audio.joue = false; arreterVoix(); majLecteur(); try { localStorage.removeItem("voixNatEnCours"); } catch { /* rien */ } }
+function pause() { audio.joue = false; arreterVoix(); maintenirEnVeille(false); majLecteur(); try { localStorage.removeItem("voixNatEnCours"); } catch { /* rien */ } }
 function sauter(d) { arreterVoix(); audio.i = Math.max(0, Math.min(audio.phrases.length - 1, audio.i + d)); audio.joue ? parler() : majLecteur(); }
 
 function changerMinuterie() {
@@ -584,3 +586,38 @@ function sessionMedia() {
     }
   } catch { /* rien */ }
 })();
+
+/* ---------- Lecture écran éteint ----------
+   Android met en pause une page qui ne joue aucun son quand l'écran s'éteint, et la voix du
+   téléphone s'arrête avec elle. On joue donc en boucle un son silencieux : Chrome considère
+   que de la musique est en cours, garde la page éveillée et affiche les commandes sur l'écran
+   verrouillé. */
+let silence = null;
+function sonSilencieux() {
+  // 1 seconde de silence, WAV 8 kHz mono 16 bits
+  const n = 8000, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const txt = (o, t) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  txt(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); txt(8, "WAVE"); txt(12, "fmt ");
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 8000, true);
+  v.setUint32(28, 16000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); txt(36, "data"); v.setUint32(40, n * 2, true);
+  return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+}
+function maintenirEnVeille(actif) {
+  try {
+    if (actif) {
+      if (!silence) { silence = new Audio(sonSilencieux()); silence.loop = true; silence.volume = 0.01; }
+      silence.play().catch(() => { /* lecture automatique refusée : sans gravité */ });
+      if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "playing";
+    } else if (silence) {
+      silence.pause();
+      if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "paused";
+    }
+  } catch { /* navigateur sans audio */ }
+}
+// Au retour à l'écran : si la voix s'est tue en route, on reprend le paragraphe en cours
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && audio.joue && !voixNaturelleChoisie()
+      && "speechSynthesis" in window && !speechSynthesis.speaking && !speechSynthesis.pending) {
+    arreterVoix(); parler();
+  }
+});
