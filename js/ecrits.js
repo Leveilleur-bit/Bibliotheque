@@ -32,35 +32,36 @@ function vueEcrits() {
   if (!liste.length) return `<div class="vide">Aucun écrit pour l'instant. Quand tu écris un livre avec Claude, demande-lui de l'ajouter ici.</div>`;
   const lecture = lireLecture();
   return `
-    <p class="intro">Les livres que tu écris avec Claude, à lire comme de vrais livres.</p>
+    <p class="intro">Les livres que tu écris avec Claude, à lire ou à écouter comme de vrais livres.</p>
     <div class="liste">${liste.map(e => {
+      const cle = "ecrit-" + e.id, ouvert = ouverts.has(cle);
       const n = (e.chapitres || []).length, prevus = Math.max(n, Number(e.chapitresPrevus) || 0);
       const pos = lecture.pos[e.id];
-      const reprise = pos && n ? `Reprendre : ${esc(titreChapitreCourt(e.chapitres[Math.min(pos.c, n - 1)].titre))}` : "Commencer la lecture";
+      const reprise = pos && n ? `Reprendre : ${esc(titreChapitreCourt(e.chapitres[Math.min(pos.c, n - 1)].titre))}` : "Lire";
+      const couv = e.couverture
+        ? `<span class="couv"><img src="${esc(e.couverture)}" alt="" loading="lazy"></span>`
+        : `<span class="couv couv-ko">${couvertureMaisonHTML({ id: e.id, titre: e.titre, auteur: e.auteurs })}</span>`;
       return `
-      <article class="livre ecrit">
-        <div class="ecrit-tete">
-          <button class="couv ecrit-couv" data-act="lire-ecrit" data-id="${esc(e.id)}" aria-label="Lire ${esc(e.titre)}" style="--c1:${teinte(e.id)};--c2:${teinte(e.id, -12)}">
-            ${e.couverture ? `<img src="${esc(e.couverture)}" alt="">` : `<span class="couv-maison"><span class="couv-titre">${esc(e.titre)}</span><span class="couv-auteur">${esc(e.auteurs || "")}</span></span>`}
-          </button>
-          <div>
-            <span class="livre-titre">${esc(e.titre)}</span>
-            <span class="livre-meta">${esc(e.auteurs || "")}${e.genre ? " · " + esc(e.genre) : ""}</span>
-            <div class="rangee" style="margin-top:6px">
-              <span class="pastille ${e.statut === "fini" ? "ok" : "accent"}">${e.statut === "fini" ? "Terminé" : "En cours d'écriture"}</span>
-              <span class="pastille neutre">${n}/${pluriel(prevus, "chapitre")}</span>
-            </div>
-          </div>
-        </div>
-        ${prevus ? `<div class="progression" role="img" aria-label="${n} chapitres écrits sur ${prevus}"><span style="width:${Math.round(n / prevus * 100)}%"></span></div>` : ""}
-        ${e.accroche ? `<p class="resume">${esc(e.accroche)}</p>` : ""}
+      <article class="livre">
+        <button class="livre-tete" data-act="ouvrir" data-id="${esc(cle)}" aria-expanded="${ouvert}">
+          ${couv}
+          <span><span class="livre-titre">${esc(e.titre)}</span><span class="livre-meta">${esc(e.auteurs || "")}${e.genre ? " · " + esc(e.genre) : ""}</span></span>
+          <span class="chevron" aria-hidden="true">▶</span>
+        </button>
         <div class="rangee">
-          ${n ? `<button class="btn" data-act="lire-ecrit" data-id="${esc(e.id)}">${reprise}</button>` : ""}
-          ${n && "speechSynthesis" in window ? `<button class="btn-sec" data-act="ecouter-ecrit" data-id="${esc(e.id)}">▶ Écouter</button>` : ""}
-          ${n > 1 ? `<button class="btn-sec" data-act="sommaire-ecrit" data-id="${esc(e.id)}">Sommaire</button>` : ""}
-          ${e.lienDoc ? `<a class="btn-discret" href="${esc(e.lienDoc)}" target="_blank" rel="noopener">Manuscrit dans Claude ↗</a>` : ""}
+          <span class="pastille support">Mon livre</span>
+          <span class="pastille ${e.statut === "fini" ? "ok" : "accent"}">${e.statut === "fini" ? "Terminé" : "En cours d'écriture"}</span>
+          <span class="pastille neutre">${n}/${pluriel(prevus, "chapitre")}</span>
         </div>
-        ${e.maj ? `<p class="doux petit" style="margin:0">Texte mis à jour le ${new Date(e.maj).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}.</p>` : ""}
+        ${ouvert ? `
+          ${e.accroche ? `<p class="resume">${esc(e.accroche)}</p>` : ""}
+          ${prevus && n < prevus ? `<div class="progression" role="img" aria-label="${n} chapitres écrits sur ${prevus}"><span style="width:${Math.round(n / prevus * 100)}%"></span></div>` : ""}
+          ${e.lienDoc ? `<p class="livre-notes"><a href="${esc(e.lienDoc)}" target="_blank" rel="noopener">Manuscrit dans Claude ↗</a>${e.maj ? ` · texte mis à jour le ${new Date(e.maj).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}` : ""}</p>` : ""}` : ""}
+        ${n ? `<div class="rangee">
+          <button class="btn" data-act="lire-ecrit" data-id="${esc(e.id)}">${reprise}</button>
+          <button class="btn-sec" data-act="ecouter-ecrit" data-id="${esc(e.id)}">▶ Écouter</button>
+          ${n > 1 ? `<button class="btn-discret" data-act="sommaire-ecrit" data-id="${esc(e.id)}">Sommaire</button>` : ""}
+        </div>` : ""}
       </article>`;
     }).join("")}</div>`;
 }
