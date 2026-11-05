@@ -507,3 +507,17 @@ body.en-lecture { overflow: hidden; }
 .liseuse .btn-sec { color: var(--lis-texte); border-color: color-mix(in srgb, var(--lis-texte) 30%, transparent); background: transparent; }
 .lis-fin { text-align: center; font-style: italic; color: var(--lis-doux); margin-top: 22px; }
 .lis-pied { text-align: center; color: var(--lis-doux); font-size: .75em; margin-top: 18px; }
+
+/* Lecteur audio de la liseuse */
+.lecteur { background: var(--lis-barre); border-top: 1px solid color-mix(in srgb, var(--lis-texte) 14%, transparent);
+  padding: 8px 14px calc(8px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 6px; }
+.lecteur-info { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: .85rem; color: var(--lis-doux); }
+.lecteur-info b { font-family: "Cormorant Garamond", serif; font-size: 1.05rem; color: var(--lis-texte); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lecteur-progres { height: 3px; border-radius: 2px; background: color-mix(in srgb, var(--lis-texte) 15%, transparent); }
+.lecteur-progres span { display: block; height: 100%; width: 0; background: var(--lis-or); border-radius: 2px; transition: width .3s; }
+.lecteur-boutons { display: flex; justify-content: space-between; align-items: center; }
+.lecteur-boutons .lis-btn { font-size: 1.25rem; min-width: 48px; height: 48px; }
+.lecteur-play { background: var(--lis-or) !important; color: var(--lis-fond) !important; border-radius: 50% !important; min-width: 56px !important; height: 56px !important; font-size: 1.4rem !important; }
+.lecteur-boutons small { font-size: .62rem; margin-left: 1px; }
+.lis-texte .lu-actif, .lis-chapitre.lu-actif { background: color-mix(in srgb, var(--lis-or) 16%, transparent); border-radius: 4px; box-shadow: 0 0 0 4px color-mix(in srgb, var(--lis-or) 16%, transparent); }
+.lis-voix { flex: 1; min-width: 0; background: transparent; color: var(--lis-texte); border: 1px solid color-mix(in srgb, var(--lis-texte) 30%, transparent); border-radius: 8px; padding: 6px; font: inherit; }

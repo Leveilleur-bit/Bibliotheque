@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "38";   // doit correspondre à version.json
+const VERSION_APPLI = "39";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -969,6 +969,7 @@ function agir(btn) {
     case "ajouter": formulaireLivre({ type: btn.dataset.type }); return;
     case "scanner": scannerLivre(); return;
     case "lire-ecrit": ouvrirLiseuse(btn.dataset.id); return;
+    case "ecouter-ecrit": ouvrirLiseuse(btn.dataset.id, undefined, undefined, true); return;
     case "sommaire-ecrit": { const e = ecrits().find(x => x.id === btn.dataset.id); if (e) sommaireEcrit(e); return; }
     case "modifier": if (l) formulaireLivre({ l }); return;
     case "credit": changerSolde(+btn.dataset.d); sauvegarder(); return;

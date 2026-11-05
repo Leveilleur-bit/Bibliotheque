@@ -1,7 +1,7 @@
 {
-  "version": "38",
+  "version": "39",
   "date": "2026-11-05",
   "nouveautes": [
-    "Nouvel onglet « Écrits » : les livres écrits avec Claude, avec une liseuse (sépia, papier ou nuit, taille du texte, reprise là où tu t'étais arrêté)"
+    "Écrits : un lecteur audio comme Audible — la voix du téléphone lit le livre, paragraphe surligné, vitesse, minuterie d'arrêt, reprise là où tu t'étais arrêté"
   ]
 }
