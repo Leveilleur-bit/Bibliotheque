@@ -1,7 +1,7 @@
 {
-  "version": "47",
+  "version": "48",
   "date": "2026-11-05",
   "nouveautes": [
-    "Liseuse : voix naturelles retirées (place libérée sur le téléphone), retour à la voix du téléphone"
+    "Écoute : l'écran reste allumé pendant la lecture, et le bouton ◐ passe en écran noir (touche deux fois pour revenir)"
   ]
 }

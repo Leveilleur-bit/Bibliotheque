@@ -529,3 +529,8 @@ body.en-lecture { overflow: hidden; }
 .lis-reglages { max-height: 70dvh; overflow-y: auto; }
 
 .lis-couverture { display: block; width: min(78%, 340px); margin: 6px auto 26px; border-radius: 4px; box-shadow: 0 14px 34px rgba(0,0,0,.45); }
+
+/* Écran noir pendant l'écoute */
+.ecran-noir { position: fixed; inset: 0; z-index: 30; background: #000; display: grid; place-items: center; cursor: pointer; }
+.ecran-noir p { color: #2a2a2a; text-align: center; font-size: .9rem; line-height: 1.6; transition: color .3s; }
+.ecran-noir.ecran-noir-indice p { color: #8a7656; }

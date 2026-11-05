@@ -169,6 +169,7 @@ function afficherChapitre(y = 0) {
       <div class="lecteur-info"><b>${esc(titreChapitreCourt(ch.titre))}</b><span class="lecteur-pos"></span></div>
       <div class="lecteur-progres"><span></span></div>
       <div class="lecteur-boutons">
+        <button class="lis-btn" data-lis="ecran-noir" aria-label="Écran noir : la lecture continue, écran au minimum">◐</button>
         <button class="lis-btn" data-lis="minuterie" aria-label="Minuterie d'arrêt">☾<small class="lecteur-minu"></small></button>
         <button class="lis-btn" data-lis="arriere" aria-label="Paragraphe précédent">⏮</button>
         <button class="lis-btn lecteur-play" data-lis="play" aria-label="Lecture ou pause">${audio.joue ? "⏸" : "▶"}</button>
@@ -220,6 +221,7 @@ function afficherChapitre(y = 0) {
       case "avant": sauter(1); return;
       case "vitesse": { const v = [0.8, 1, 1.15, 1.3, 1.5]; audio.vitesse = v[(v.indexOf(audio.vitesse) + 1) % v.length]; l.reglages.vitesse = audio.vitesse; ecrireLecture(l); b.textContent = String(audio.vitesse).replace(".", ",") + "×"; if (audio.joue) { arreterVoix(); parler(); } return; }
       case "minuterie": changerMinuterie(); return;
+      case "ecran-noir": ecranNoir(); return;
       case "timbre": l.reglages.timbre = b.dataset.t; ecrireLecture(l);
         liseuse.el.querySelectorAll('[data-lis="timbre"]').forEach(x => x.classList.toggle("actif", x === b));
         if (audio.joue) { arreterVoix(); parler(); } return;
@@ -230,6 +232,7 @@ function afficherChapitre(y = 0) {
 
 function fermerLiseuse(sansRendu) {
   if (!liseuse) return;
+  document.querySelector(".ecran-noir")?.remove();
   maintenirEnVeille(false);
   pause();
   audio.actif = false;
@@ -455,7 +458,35 @@ function sonSilencieux() {
   v.setUint32(28, 16000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); txt(36, "data"); v.setUint32(40, n * 2, true);
   return URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
 }
+// Android coupe la voix du téléphone quand l'écran se met en veille : on garde l'écran allumé
+// pendant l'écoute (verrou d'écran), et le mode « écran noir » le rend presque invisible.
+let verrouEcran = null;
+async function garderEcranAllume(actif) {
+  try {
+    if (actif && "wakeLock" in navigator && !verrouEcran) {
+      verrouEcran = await navigator.wakeLock.request("screen");
+      verrouEcran.addEventListener("release", () => { verrouEcran = null; });
+    } else if (!actif && verrouEcran) { await verrouEcran.release(); verrouEcran = null; }
+  } catch { /* refusé (batterie faible…) : sans gravité */ }
+}
+function ecranNoir() {
+  if (!audio.joue) jouer();
+  const v = document.createElement("div");
+  v.className = "ecran-noir";
+  v.innerHTML = `<p>La lecture continue.<br>Touche deux fois l'écran pour revenir.</p>`;
+  document.body.appendChild(v);
+  let dernier = 0;
+  v.addEventListener("click", () => {
+    const t = Date.now();
+    if (t - dernier < 450) v.remove();
+    dernier = t;
+    v.classList.add("ecran-noir-indice");
+    setTimeout(() => v.classList.remove("ecran-noir-indice"), 1500);
+  });
+}
+
 function maintenirEnVeille(actif) {
+  garderEcranAllume(actif);
   try {
     if (actif) {
       if (!silence) { silence = new Audio(sonSilencieux()); silence.loop = true; silence.volume = 0.01; }
@@ -469,6 +500,7 @@ function maintenirEnVeille(actif) {
 }
 // Au retour à l'écran : si la voix s'est tue en route, on reprend le paragraphe en cours
 document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && audio.joue) garderEcranAllume(true);
   if (document.visibilityState === "visible" && audio.joue && !voixNaturelleChoisie()
       && "speechSynthesis" in window && !speechSynthesis.speaking && !speechSynthesis.pending) {
     arreterVoix(); parler();
