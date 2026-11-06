@@ -28,12 +28,29 @@ function mdEnHTML(md) {
 }
 
 /* ---------- Onglet Écrits ---------- */
+// Livre lu ou écouté jusqu'au bout : marqué à la fin de l'écoute ou de la lecture,
+// ou déduit d'une ancienne position arrêtée sur le dernier paragraphe du dernier chapitre
+function livreFini(e, pos) {
+  const n = (e.chapitres || []).length;
+  if (!pos || !n) return false;
+  if (pos.fini) return true;
+  if (pos.c < n - 1) return false;
+  if ((pos.y || 0) >= 0.97) return true;
+  const paras = String(e.chapitres[n - 1].texte || "").split(/\n\s*\n/).filter(t => t.trim() && !/^(❦|-{3,}|\*{3,})$/.test(t.trim())).length;
+  return pos.p != null && pos.p >= paras - 2;   // + le titre lu en premier, avec une marge
+}
+function marquerFini(id) {
+  const l = lireLecture();
+  l.pos[id] = Object.assign(l.pos[id] || {}, { fini: true, d: Date.now() });
+  ecrireLecture(l);
+}
+
 function vueEcrits() {
   const liste = ecrits().slice();
   if (!liste.length) return `<div class="vide">Aucun écrit pour l'instant. Quand tu écris un livre avec Claude, demande-lui de l'ajouter ici.</div>`;
   const lecture = lireLecture();
   // le livre en cours de lecture ou d'écoute (le plus récemment ouvert) passe en haut
-  const vu = e => (lecture.pos[e.id] && lecture.pos[e.id].d) || 0;
+  const vu = e => (!livreFini(e, lecture.pos[e.id]) && lecture.pos[e.id] && lecture.pos[e.id].d) || 0;
   liste.sort((a, b) => vu(b) - vu(a));
   return `
     <p class="intro">Les livres que tu écris avec Claude, à lire ou à écouter comme de vrais livres.</p>
@@ -41,7 +58,8 @@ function vueEcrits() {
       const cle = "ecrit-" + e.id, ouvert = ouverts.has(cle);
       const n = (e.chapitres || []).length, prevus = Math.max(n, Number(e.chapitresPrevus) || 0);
       const pos = lecture.pos[e.id];
-      const reprise = pos && n ? `Reprendre : ${esc(titreChapitreCourt(e.chapitres[Math.min(pos.c, n - 1)].titre))}` : "Lire";
+      const fini = livreFini(e, pos);
+      const reprise = fini ? "Relire" : pos && n ? `Reprendre : ${esc(titreChapitreCourt(e.chapitres[Math.min(pos.c, n - 1)].titre))}` : "Lire";
       const couv = e.couverture
         ? `<span class="couv"><img src="${esc(e.couverture)}" alt="" loading="lazy"></span>`
         : `<span class="couv couv-ko">${couvertureMaisonHTML({ id: e.id, titre: e.titre, auteur: e.auteurs })}</span>`;
@@ -56,6 +74,7 @@ function vueEcrits() {
           <span class="pastille support">Mon livre</span>
           <span class="pastille ${e.statut === "fini" ? "ok" : "accent"}">${e.statut === "fini" ? "Terminé" : "En cours d'écriture"}</span>
           <span class="pastille neutre">${n}/${pluriel(prevus, "chapitre")}</span>
+          ${fini ? `<span class="pastille ok">✓ Lu jusqu'au bout</span>` : ""}
         </div>
         ${ouvert ? `
           ${e.accroche ? `<p class="resume">${esc(e.accroche)}</p>` : ""}
@@ -97,6 +116,8 @@ function ouvrirLiseuse(id, chapitre, defil, ecouter) {
   const e = ecrits().find(x => x.id === id);
   if (!e || !(e.chapitres || []).length) return;
   const lecture = lireLecture();
+  // un livre terminé repart du début
+  if (chapitre == null && livreFini(e, lecture.pos[id])) { delete lecture.pos[id]; ecrireLecture(lecture); }
   const pos = lecture.pos[id] || { c: 0, y: 0 };
   const c = Math.max(0, Math.min(chapitre ?? pos.c, e.chapitres.length - 1));
   const y = defil ?? (c === pos.c ? pos.y : 0);
@@ -200,6 +221,8 @@ function afficherChapitre(y = 0) {
     attente = setTimeout(() => {
       const l = lireLecture();
       l.pos[id] = Object.assign(l.pos[id] || {}, { c, y: r, d: Date.now() });
+      const nb = (ecrits().find(x => x.id === id)?.chapitres || []).length;
+      if (c >= nb - 1 && r >= 0.97) l.pos[id].fini = true; else delete l.pos[id].fini;
       if (l.pos[id].c !== c) delete l.pos[id].p;
       ecrireLecture(l);
     }, 300);
@@ -343,6 +366,7 @@ function parler() {
 function memoriserPosition() {
   const l = lireLecture();
   l.pos[liseuse.id] = Object.assign(l.pos[liseuse.id] || {}, { c: liseuse.c, p: audio.i, d: Date.now() });
+  delete l.pos[liseuse.id].fini;
   ecrireLecture(l);
 }
 
@@ -365,6 +389,7 @@ function suivantAudio() {
   if (audio.i < audio.phrases.length - 1) { audio.i++; return parler(); }
   // fin du chapitre
   const e = ecrits().find(x => x.id === liseuse.id);
+  if (liseuse.c >= e.chapitres.length - 1) marquerFini(liseuse.id);
   if (audio.finChapitre || liseuse.c >= e.chapitres.length - 1) return finMinuterie(liseuse.c >= e.chapitres.length - 1 ? "Fin des chapitres écrits pour l'instant." : null);
   liseuse.c++;
   audio.i = 0;

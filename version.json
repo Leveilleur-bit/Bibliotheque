@@ -1,7 +1,7 @@
 {
-  "version": "56",
+  "version": "57",
   "date": "2026-11-06",
   "nouveautes": [
-    "Écrits : le livre en cours de lecture est affiché en haut"
+    "Écrits : un livre lu ou écouté jusqu'au bout est marqué « Lu » et se relit depuis le début"
   ]
 }
