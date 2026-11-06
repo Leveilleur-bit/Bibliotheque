@@ -29,9 +29,12 @@ function mdEnHTML(md) {
 
 /* ---------- Onglet Écrits ---------- */
 function vueEcrits() {
-  const liste = ecrits();
+  const liste = ecrits().slice();
   if (!liste.length) return `<div class="vide">Aucun écrit pour l'instant. Quand tu écris un livre avec Claude, demande-lui de l'ajouter ici.</div>`;
   const lecture = lireLecture();
+  // le livre en cours de lecture ou d'écoute (le plus récemment ouvert) passe en haut
+  const vu = e => (lecture.pos[e.id] && lecture.pos[e.id].d) || 0;
+  liste.sort((a, b) => vu(b) - vu(a));
   return `
     <p class="intro">Les livres que tu écris avec Claude, à lire ou à écouter comme de vrais livres.</p>
     <div class="liste">${liste.map(e => {

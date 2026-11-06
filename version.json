@@ -1,7 +1,7 @@
 {
-  "version": "55",
+  "version": "56",
   "date": "2026-11-06",
   "nouveautes": [
-    "Audible : le livre en cours d'écoute est affiché tout en haut"
+    "Écrits : le livre en cours de lecture est affiché en haut"
   ]
 }
