@@ -21,7 +21,8 @@ function mdEnHTML(md) {
   return String(md || "").replace(/\r/g, "").split(/\n{2,}/).map(b => b.trim()).filter(Boolean).map(b => {
     if (/^#{1,6}\s/.test(b)) return `<h3>${enLigne(b.replace(/^#+\s*/, ""))}</h3>`;
     if (/^(\*\s*){3,}$|^-{3,}$|^_{3,}$/.test(b)) return `<p class="ornement" aria-hidden="true">❦</p>`;
-    if (/^>/.test(b)) return `<blockquote>${enLigne(b.replace(/^>\s?/gm, ""))}</blockquote>`;
+    // citation ou vers : les lignes « > » vides séparent les vers, pas des paragraphes
+    if (/^>/.test(b)) return `<blockquote>${enLigne(b.replace(/^>\s?/gm, "").replace(/\n{2,}/g, "\n").trim())}</blockquote>`;
     return `<p>${enLigne(b)}</p>`;
   }).join("");
 }
