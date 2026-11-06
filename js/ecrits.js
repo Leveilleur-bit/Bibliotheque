@@ -45,6 +45,15 @@ function marquerFini(id) {
   ecrireLecture(l);
 }
 
+// Couverture introuvable (site pas encore à jour juste après l'ajout d'un livre) :
+// on réessaie toutes les 20 s pendant 3 minutes, sans passer par le cache
+function couvEcritKO(img) {
+  const n = Number(img.dataset.essais || 0);
+  if (n >= 9) return;
+  img.dataset.essais = n + 1;
+  setTimeout(() => { if (img.isConnected) img.src = img.getAttribute("src").split("?")[0] + "?r=" + Date.now(); }, 20000);
+}
+
 function vueEcrits() {
   const liste = ecrits().slice();
   if (!liste.length) return `<div class="vide">Aucun écrit pour l'instant. Quand tu écris un livre avec Claude, demande-lui de l'ajouter ici.</div>`;
@@ -61,7 +70,7 @@ function vueEcrits() {
       const fini = livreFini(e, pos);
       const reprise = fini ? "Relire" : pos && n ? `Reprendre : ${esc(titreChapitreCourt(e.chapitres[Math.min(pos.c, n - 1)].titre))}` : "Lire";
       const couv = e.couverture
-        ? `<span class="couv"><img src="${esc(e.couverture)}" alt="" loading="lazy"></span>`
+        ? `<span class="couv"><img src="${esc(e.couverture)}" alt="" loading="lazy" onerror="couvEcritKO(this)"></span>`
         : `<span class="couv couv-ko">${couvertureMaisonHTML({ id: e.id, titre: e.titre, auteur: e.auteurs })}</span>`;
       return `
       <article class="livre">
@@ -175,7 +184,7 @@ function afficherChapitre(y = 0) {
     </div>
     <div class="lis-defil">
       <article class="lis-page">
-        ${liseuse.c === 0 && e.couverture ? `<img class="lis-couverture" src="${esc(e.couverture)}" alt="Couverture : ${esc(e.titre)}, ${esc(e.auteurs || "")}">` : ""}
+        ${liseuse.c === 0 && e.couverture ? `<img class="lis-couverture" src="${esc(e.couverture)}" onerror="couvEcritKO(this)" alt="Couverture : ${esc(e.titre)}, ${esc(e.auteurs || "")}">` : ""}
         <p class="lis-surtitre">${esc(e.titre)}</p>
         <h2 class="lis-chapitre">${esc(ch.titre).replace(/\s[—–-]\s/, "<br><span>").replace(/$/, ch.titre.match(/\s[—–-]\s/) ? "</span>" : "")}</h2>
         <p class="ornement" aria-hidden="true">❦</p>
