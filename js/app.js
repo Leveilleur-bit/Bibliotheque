@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "60";   // doit correspondre à version.json
+const VERSION_APPLI = "61";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -53,11 +53,11 @@ function normaliser(d) {
 }
 
 let etat = normaliser(lireJSON(CLE_STOCKAGE));
-const ui = Object.assign({ vue: "audible", filtreAudible: "a_ecouter", filtreGenre: "tout", triGenre: "auteur", ongletIdees: "fantasy", affichageGenre: "liste", recherche: "" }, lireJSON(CLE_UI) || {});
+const ui = Object.assign({ vue: "audible", filtreAudible: "a_ecouter", filtreGenre: "tout", triGenre: "auteur", ongletIdees: "fantasy", affichageGenre: "liste", affichageEcrits: "etagere", ecritChoisi: "", recherche: "" }, lireJSON(CLE_UI) || {});
 const ouverts = new Set();
 let suppressionEnAttente = null;
 
-function sauverUI() { ecrireJSON(CLE_UI, { vue: ui.vue, filtreAudible: ui.filtreAudible, filtreGenre: ui.filtreGenre, triGenre: ui.triGenre, ongletIdees: ui.ongletIdees, affichageGenre: ui.affichageGenre }); }
+function sauverUI() { ecrireJSON(CLE_UI, { vue: ui.vue, filtreAudible: ui.filtreAudible, filtreGenre: ui.filtreGenre, triGenre: ui.triGenre, ongletIdees: ui.ongletIdees, affichageGenre: ui.affichageGenre, affichageEcrits: ui.affichageEcrits, ecritChoisi: ui.ecritChoisi }); }
 
 // À appeler après chaque changement fait par l'utilisateur
 function sauvegarder() {
@@ -974,6 +974,8 @@ function agir(btn) {
     case "fiche-auteur": ficheAuteur(btn.dataset.nom); return;
     case "apercu-tranche": apercuTranche(l, +btn.dataset.i || 0); return;
     case "affichage-genre": ui.affichageGenre = btn.dataset.a; sauverUI(); rendre(); return;
+    case "affichage-ecrits": ui.affichageEcrits = btn.dataset.a; sauverUI(); rendre(); return;
+    case "choisir-ecrit": ui.ecritChoisi = id; sauverUI(); rendre(); return;
     case "tri-genre": ui.triGenre = btn.dataset.t; sauverUI(); rendre(); return;
     case "ajouter": formulaireLivre({ type: btn.dataset.type }); return;
     case "scanner": scannerLivre(); return;

@@ -542,3 +542,20 @@ body.en-lecture { overflow: hidden; }
 
 .lis-texte h3 { text-align: center; font-family: "Cormorant Garamond", serif; font-style: italic; font-weight: 600; font-size: 1.2em; margin: 1.4em 0 .4em; }
 .lis-texte blockquote { text-align: left; line-height: 1.55; }
+
+/* ---------- Écrits : la bibliothèque (dos illustrés, en ordre de lecture) ---------- */
+.biblio-ecrits {
+  --h: min(calc((100vw - 64px) * 1.3), 62vh, 600px);
+  padding: 22px 8px 0; border-radius: 10px; margin-top: 6px;
+  background: linear-gradient(rgba(20,12,8,.55), rgba(20,12,8,.75));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), inset 0 10px 30px rgba(0,0,0,.55);
+}
+.dos-rang { display: flex; justify-content: center; align-items: flex-end; gap: 0;
+  border-bottom: 14px solid #5a3a22; box-shadow: 0 3px 0 #3a2414, 0 8px 14px rgba(0,0,0,.5); }
+.dos-ecrit { all: unset; cursor: pointer; box-sizing: border-box; height: var(--h); display: block; flex: 0 1 auto;
+  transition: transform .18s ease, filter .18s ease; box-shadow: 1px 0 2px rgba(0,0,0,.55); }
+.dos-ecrit img { height: 100%; width: auto; display: block; border-radius: 2px 2px 0 0; }
+.dos-ecrit.choisi { transform: translateY(-16px); filter: drop-shadow(0 0 6px rgba(217,181,106,.75)); }
+.dos-ecrit:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.dos-maison { width: calc(var(--h) * .057); background: linear-gradient(90deg, #142238, #24375a 50%, #142238); display: flex; align-items: center; justify-content: center; }
+.dos-maison span { writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--display); color: #f0dcaa; font-size: .7rem; white-space: nowrap; overflow: hidden; max-height: 80%; }

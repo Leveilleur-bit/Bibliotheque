@@ -55,16 +55,40 @@ function couvEcritKO(img) {
 }
 
 function vueEcrits() {
-  const liste = ecrits().slice();
-  if (!liste.length) return `<div class="vide">Aucun écrit pour l'instant. Quand tu écris un livre avec Claude, demande-lui de l'ajouter ici.</div>`;
+  const ordre = ecrits().slice();
+  if (!ordre.length) return `<div class="vide">Aucun écrit pour l'instant. Quand tu écris un livre avec Claude, demande-lui de l'ajouter ici.</div>`;
   const lecture = lireLecture();
   // le livre en cours de lecture ou d'écoute (le plus récemment ouvert) passe en haut
   const vu = e => (!livreFini(e, lecture.pos[e.id]) && lecture.pos[e.id] && lecture.pos[e.id].d) || 0;
-  liste.sort((a, b) => vu(b) - vu(a));
+  const liste = ordre.slice().sort((a, b) => vu(b) - vu(a));
+  const etagere = ui.affichageEcrits !== "liste";
+  const bascule = `<div class="tri" role="group" aria-label="Affichage">Afficher en
+      <button class="btn-discret" data-act="affichage-ecrits" data-a="etagere" aria-pressed="${etagere}">bibliothèque</button>
+      <button class="btn-discret" data-act="affichage-ecrits" data-a="liste" aria-pressed="${!etagere}">liste</button>
+    </div>`;
+  if (etagere) {
+    // les dos suivent l'ordre de lecture ; touché, un livre sort du rang et sa fiche s'affiche dessous
+    const choisi = ordre.find(e => e.id === ui.ecritChoisi) || liste[0];
+    const dos = ordre.map(e => {
+      const sel = e === choisi ? " choisi" : "";
+      const etiquette = `${e.serie ? e.serie + ", livre " + e.tome + " : " : ""}${e.titre}`;
+      return e.dos
+        ? `<button class="dos-ecrit${sel}" data-act="choisir-ecrit" data-id="${esc(e.id)}" aria-label="${esc(etiquette)}" aria-pressed="${!!sel}"><img src="${esc(e.dos)}" alt="" onerror="couvEcritKO(this)"></button>`
+        : `<button class="dos-ecrit dos-maison${sel}" data-act="choisir-ecrit" data-id="${esc(e.id)}" aria-label="${esc(etiquette)}" aria-pressed="${!!sel}"><span>${esc(e.titre)}</span></button>`;
+    }).join("");
+    return `${bascule}
+    <div class="biblio-ecrits"><div class="dos-rang" role="list">${dos}</div></div>
+    <p class="doux petit legende-etagere">Les livres sont rangés dans l'ordre de lecture. Touche un dos pour le sortir du rayon.</p>
+    <div class="liste">${carteEcrit(choisi, lecture, true)}</div>`;
+  }
   return `
     <p class="intro">Les livres que tu écris avec Claude, à lire ou à écouter comme de vrais livres.</p>
-    <div class="liste">${liste.map(e => {
-      const cle = "ecrit-" + e.id, ouvert = ouverts.has(cle);
+    ${bascule}
+    <div class="liste">${liste.map(e => carteEcrit(e, lecture)).join("")}</div>`;
+}
+
+function carteEcrit(e, lecture, toujoursOuvert) {
+      const cle = "ecrit-" + e.id, ouvert = toujoursOuvert || ouverts.has(cle);
       const n = (e.chapitres || []).length, prevus = Math.max(n, Number(e.chapitresPrevus) || 0);
       const pos = lecture.pos[e.id];
       const fini = livreFini(e, pos);
@@ -74,10 +98,10 @@ function vueEcrits() {
         : `<span class="couv couv-ko">${couvertureMaisonHTML({ id: e.id, titre: e.titre, auteur: e.auteurs })}</span>`;
       return `
       <article class="livre">
-        <button class="livre-tete" data-act="ouvrir" data-id="${esc(cle)}" aria-expanded="${ouvert}">
+        <button class="livre-tete" ${toujoursOuvert ? "" : `data-act="ouvrir" data-id="${esc(cle)}" aria-expanded="${ouvert}"`}>
           ${couv}
           <span><span class="livre-titre">${esc(e.titre)}</span><span class="livre-meta">${esc(e.auteurs || "")}${e.genre ? " · " + esc(e.genre) : ""}</span></span>
-          <span class="chevron" aria-hidden="true">▶</span>
+          ${toujoursOuvert ? "" : `<span class="chevron" aria-hidden="true">▶</span>`}
         </button>
         <div class="rangee">
           <span class="pastille support">Mon livre</span>
@@ -95,7 +119,6 @@ function vueEcrits() {
           ${n > 1 ? `<button class="btn-discret" data-act="sommaire-ecrit" data-id="${esc(e.id)}">Sommaire</button>` : ""}
         </div>` : ""}
       </article>`;
-    }).join("")}</div>`;
 }
 
 const titreChapitreCourt = t => String(t).replace(/^Chapitre\s+([IVXLC\d]+)\s*[—–-]\s*/i, "$1. ");
