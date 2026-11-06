@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "54";   // doit correspondre à version.json
+const VERSION_APPLI = "55";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -86,7 +86,6 @@ function modifier(id, champs) {
 
 const FILTRES_AUDIBLE = [
   ["a_ecouter", "À écouter"],
-  ["en_cours", "En cours"],
   ["ecoute", "Écouté"]
 ];
 const TITRES_VUES = { accueil: "Ma Bibliothèque", audible: "Audible", fantasy: "Fantasy", sf: "Science-fiction", autre: "Autres lectures", envies: "Envies", propositions: "Envies et idées", ecrits: "Mes écrits", reglages: "Réglages" };
@@ -279,6 +278,8 @@ function vueAudible() {
   const achetes = audible.filter(l => l.achat === "credit");
   const livresEcoutes = totalFinis(audible.filter(l => l.statut === "ecoute" || l.statut === "en_cours"));
   const compter = s => s === "ecoute" ? livresEcoutes : audible.filter(l => l.statut === s).length;
+  if (ui.filtreAudible === "en_cours") ui.filtreAudible = "a_ecouter";   // l'écoute en cours est toujours affichée en haut
+  const enCours = audible.filter(l => l.statut === "en_cours").sort(parMaj);
   const affiches = audible.filter(l => l.statut === ui.filtreAudible).sort(ui.filtreAudible === "ecoute" ? parTitre : parMaj);
   const vides = {
     a_ecouter: "Rien en attente. Ajoute un titre une fois sa fiche audible.fr vérifiée en français, ou valide une proposition.",
@@ -287,6 +288,10 @@ function vueAudible() {
   };
   const journal = achetes.slice().sort((a, b) => String(b.dateAchat || "").localeCompare(String(a.dateAchat || "")));
   return `
+    ${enCours.length ? `<section class="section en-cours-haut">
+      <div class="section-titre"><h2>En cours d'écoute</h2></div>
+      <div class="liste">${enCours.map(carteLivre).join("")}</div>
+    </section>` : ""}
     <section class="credits" aria-label="Crédits Audible">
       <div><div class="lbl">Crédits dispo</div><div class="chiffre">${etat.credits.solde || 0}</div></div>
       <div style="display:grid;gap:10px;min-width:0">
