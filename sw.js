@@ -4,11 +4,11 @@
    Fichiers de l'appli : cache d'abord, rafraîchis en arrière-plan.
    Incrémente CACHE_VERSION à chaque changement des fichiers.
    ============================================================ */
-const CACHE_VERSION = "v57";
+const CACHE_VERSION = "v58";
 const CACHE_NAME = "ma-bibliotheque-" + CACHE_VERSION;
 const FICHIERS = [
   "./", "./index.html", "./manifest.json", "./css/style.css",
-  "./js/app.js", "./js/sync.js", "./js/couvertures.js", "./js/outils.js", "./js/ecrits.js", "./img/reserve/salle-aux-cranes.jpg", "./icon-192.png", "./icon-512.png", "./img/accueil.jpg", "./img/audible.jpg", "./img/autres.jpg", "./img/envies.jpg", "./img/idees.jpg", "./img/reglages.jpg", "./img/fantasy.jpg", "./img/sf.jpg", "./img/ecrits/kerlaouen.jpg", "./img/ecrits/reliques-1.jpg", "./img/ecrits/cloche-nevet.jpg", "./img/ecrits/reliques-2.jpg", "./img/ecrits/reliques-3.jpg"
+  "./js/app.js", "./js/sync.js", "./js/couvertures.js", "./js/outils.js", "./js/ecrits.js", "./img/reserve/salle-aux-cranes.jpg", "./icon-192.png", "./icon-512.png", "./img/accueil.jpg", "./img/audible.jpg", "./img/autres.jpg", "./img/envies.jpg", "./img/idees.jpg", "./img/reglages.jpg", "./img/fantasy.jpg", "./img/sf.jpg", "./img/ecrits/kerlaouen.jpg", "./img/ecrits/reliques-1.jpg", "./img/ecrits/cloche-nevet.jpg", "./img/ecrits/reliques-2.jpg", "./img/ecrits/reliques-3.jpg", "./img/ecrits/comptes-is.jpg"
 ];
 
 self.addEventListener("install", event => {

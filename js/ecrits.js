@@ -379,7 +379,8 @@ function romainEnNombre(r) {
   return n;
 }
 function titreAOral(t) {
-  return String(t).replace(/^Chapitre\s+([IVXLC]+)\b/i, (m, r) => "Chapitre " + (NOMBRES[romainEnNombre(r.toUpperCase())] || r))
+  return String(t).replace(/^([IVXLC]+)\.\s+/, "Chapitre $1 — ")   // « I. La ville qui riait »
+    .replace(/^Chapitre\s+([IVXLC]+)\b/i, (m, r) => "Chapitre " + (NOMBRES[romainEnNombre(r.toUpperCase())] || r))
     .replace(/\s[—–-]\s/, ". ") + ".";
 }
 
