@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "53";   // doit correspondre à version.json
+const VERSION_APPLI = "54";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -89,7 +89,7 @@ const FILTRES_AUDIBLE = [
   ["en_cours", "En cours"],
   ["ecoute", "Écouté"]
 ];
-const TITRES_VUES = { accueil: "Ma Bibliothèque", audible: "Audible", fantasy: "Fantasy", sf: "Science-fiction", autre: "Autres lectures", envies: "Envies", propositions: "Propositions", ecrits: "Mes écrits", reglages: "Réglages" };
+const TITRES_VUES = { accueil: "Ma Bibliothèque", audible: "Audible", fantasy: "Fantasy", sf: "Science-fiction", autre: "Autres lectures", envies: "Envies", propositions: "Envies et idées", ecrits: "Mes écrits", reglages: "Réglages" };
 const GENRES = { fantasy: "Fantasy", sf: "Science-fiction", autre: "Autres lectures" };
 const genreDe = l => l.genre === "fantasy" || l.genre === "sf" ? l.genre : "autre";
 const FILTRES_GENRE = [
@@ -383,7 +383,7 @@ function vueAccueil() {
 
     ${idee ? `
     <section class="carte accueil-bloc">
-      <div class="section-titre"><h2>Prochaine idée</h2><button class="btn-discret" data-act="aller" data-vue="propositions">Toutes ›</button></div>
+      <div class="section-titre"><h2>Prochaine idée</h2><button class="btn-discret" data-act="aller" data-vue="propositions" data-onglet="fantasy">Toutes ›</button></div>
       <div><b class="accueil-idee">${esc(idee.titre)}</b>${idee.auteur ? `<div class="doux petit">${esc(idee.auteur)}${idee.axe ? " · " + esc(idee.axe) : ""}</div>` : ""}</div>
       ${noteSiteHTML(idee)}
     </section>` : ""}
@@ -654,7 +654,7 @@ function carteSerieHTML(l) {
     </article>`;
 }
 
-const ONGLETS_IDEES = [["fantasy", "Fantasy"], ["sf", "SF"], ["classiques", "Grands classiques"], ["series", "Compléter une série"]];
+const ONGLETS_IDEES = [["envies", "Mes envies"], ["fantasy", "Fantasy"], ["sf", "SF"], ["classiques", "Grands classiques"], ["series", "Compléter une série"]];
 const NB_CLASSIQUES = 5;   // les suivants attendent en réserve et prennent la place de ceux qui partent
 const ongletIdee = l => l.classique ? "classiques" : l.genre === "sf" ? "sf" : "fantasy";
 const INTROS_IDEES = {
@@ -664,14 +664,16 @@ const INTROS_IDEES = {
 };
 
 function vuePropositions() {
-  if (!ONGLETS_IDEES.some(([k]) => k === ui.ongletIdees)) ui.ongletIdees = "fantasy";
+  if (!ONGLETS_IDEES.some(([k]) => k === ui.ongletIdees)) ui.ongletIdees = "envies";
   const props = etat.livres.filter(l => l.statut === "propose").sort((a, b) => (a.rang ?? 99) - (b.rang ?? 99));
   const refusees = etat.livres.filter(l => l.statut === "refuse").sort(parMaj);
   const series = seriesACompleter();
   const classiques = props.filter(l => ongletIdee(l) === "classiques");
   const reserve = classiques.slice(NB_CLASSIQUES);
-  const compter = k => k === "series" ? series.length : k === "classiques" ? Math.min(classiques.length, NB_CLASSIQUES) : props.filter(l => ongletIdee(l) === k).length;
+  const nbEnvies = etat.livres.filter(l => l.support === "envie").length;
+  const compter = k => k === "envies" ? nbEnvies : k === "series" ? series.length : k === "classiques" ? Math.min(classiques.length, NB_CLASSIQUES) : props.filter(l => ongletIdee(l) === k).length;
   const onglets = filtresHTML(ONGLETS_IDEES, ui.ongletIdees, "onglet-idees", compter);
+  if (ui.ongletIdees === "envies") return onglets + vueEnvies();
   if (ui.ongletIdees === "series") return `
     ${onglets}
     <p class="intro">Les séries que tu as commencées et dont il te manque des tomes. Le total n'est indiqué que pour les séries dont Claude est sûr ; tu peux le renseigner toi-même dans « Modifier ».</p>
@@ -794,7 +796,7 @@ function rendre() {
   chargerCouvertures(vue);
   const genre = ["fantasy", "sf", "autre"].includes(ui.vue) ? ui.vue : null;
   // Fond d'ambiance : chaque onglet a le sien
-  document.body.dataset.fond = genre || { accueil: "accueil", envies: "envies", propositions: "idees", ecrits: "ecrits", reglages: "reglages" }[ui.vue] || "audible";
+  document.body.dataset.fond = genre || { accueil: "accueil", envies: "envies", propositions: ui.ongletIdees === "envies" ? "envies" : "idees", ecrits: "ecrits", reglages: "reglages" }[ui.vue] || "audible";
   vue.classList.add("sur-image");
   $("#titre-vue").textContent = ui.vue === "audible" ? "Audible" : TITRES_VUES[ui.vue];
   document.querySelectorAll(".barre button").forEach(b => b.setAttribute("aria-current", b.dataset.vue === ui.vue ? "page" : "false"));
@@ -807,6 +809,7 @@ function rendre() {
 function rendreReglages() { if (ui.vue === "reglages") rendre(); }
 
 function allerA(vue) {
+  if (vue === "envies") { ui.ongletIdees = "envies"; vue = "propositions"; }   // les envies vivent dans l'onglet des idées
   if (ui.vue !== vue) ui.recherche = "";
   ui.vue = vue;
   suppressionEnAttente = null;
@@ -948,6 +951,7 @@ function agir(btn) {
     case "aller":
       if (btn.dataset.filtre) ui.filtreAudible = btn.dataset.filtre;
       if (btn.dataset.genreFiltre) ui.filtreGenre = btn.dataset.genreFiltre;
+      if (btn.dataset.onglet) ui.ongletIdees = btn.dataset.onglet;
       allerA(btn.dataset.vue);
       return;
     case "filtre-genre": ui.filtreGenre = btn.dataset.f; sauverUI(); rendre(); return;
