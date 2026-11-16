@@ -1,7 +1,7 @@
 {
-  "version": "62",
-  "date": "2026-11-15",
+  "version": "63",
+  "date": "2026-11-16",
   "nouveautes": [
-    "Écrits : dos réarrangés pour que la fresque suive l'ordre de lecture"
+    "Écrits : les livres sont regroupés par cycle, chacun avec son titre et son rayon"
   ]
 }

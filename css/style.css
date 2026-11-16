@@ -559,3 +559,7 @@ body.en-lecture { overflow: hidden; }
 .dos-ecrit:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .dos-maison { width: calc(var(--h) * .057); background: linear-gradient(90deg, #142238, #24375a 50%, #142238); display: flex; align-items: center; justify-content: center; }
 .dos-maison span { writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--display); color: #f0dcaa; font-size: .7rem; white-space: nowrap; overflow: hidden; max-height: 80%; }
+
+.cycle-tete { margin: 1.2rem 0 .4rem; text-align: center; }
+.cycle-titre { margin: 0; font-family: var(--display); font-size: 1.15rem; letter-spacing: .04em; color: var(--accent, #e0c377); }
+.cycle-tete p { margin: .2rem 0 0; }

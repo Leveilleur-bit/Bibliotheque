@@ -54,6 +54,14 @@ function couvEcritKO(img) {
   setTimeout(() => { if (img.isConnected) img.src = img.getAttribute("src").split("?")[0] + "?r=" + Date.now(); }, 20000);
 }
 
+// regroupe les écrits par cycle, dans l'ordre où les cycles apparaissent
+function parCycles(liste) {
+  const m = new Map();
+  liste.forEach(e => { const c = e.cycle || e.serie || "Autres écrits"; if (!m.has(c)) m.set(c, []); m.get(c).push(e); });
+  return [...m].map(([nom, livres]) => ({ nom, livres, note: (livres.find(x => x.cycleNote) || {}).cycleNote || "" }));
+}
+const enteteCycle = (c, seul) => seul ? "" : `<div class="cycle-tete"><h3 class="cycle-titre">${esc(c.nom)}</h3>${c.note ? `<p class="doux petit">${esc(c.note)}</p>` : ""}</div>`;
+
 function vueEcrits() {
   const ordre = ecrits().slice();
   if (!ordre.length) return `<div class="vide">Aucun écrit pour l'instant. Quand tu écris un livre avec Claude, demande-lui de l'ajouter ici.</div>`;
@@ -69,22 +77,25 @@ function vueEcrits() {
   if (etagere) {
     // les dos suivent l'ordre de lecture ; touché, un livre sort du rang et sa fiche s'affiche dessous
     const choisi = ordre.find(e => e.id === ui.ecritChoisi) || liste[0];
-    const dos = ordre.map(e => {
+    const dosDe = e => {
       const sel = e === choisi ? " choisi" : "";
       const etiquette = `${e.serie ? e.serie + ", livre " + e.tome + " : " : ""}${e.titre}`;
       return e.dos
         ? `<button class="dos-ecrit${sel}" data-act="choisir-ecrit" data-id="${esc(e.id)}" aria-label="${esc(etiquette)}" aria-pressed="${!!sel}"><img src="${esc(e.dos)}" alt="" onerror="couvEcritKO(this)"></button>`
         : `<button class="dos-ecrit dos-maison${sel}" data-act="choisir-ecrit" data-id="${esc(e.id)}" aria-label="${esc(etiquette)}" aria-pressed="${!!sel}"><span>${esc(e.titre)}</span></button>`;
-    }).join("");
+    };
+    const cycles = parCycles(ordre);
+    const rayons = cycles.map(c => `${enteteCycle(c, cycles.length < 2)}
+    <div class="biblio-ecrits"><div class="dos-rang" role="list">${c.livres.map(dosDe).join("")}</div></div>`).join("");
     return `${bascule}
-    <div class="biblio-ecrits"><div class="dos-rang" role="list">${dos}</div></div>
-    <p class="doux petit legende-etagere">Les livres sont rangés dans l'ordre de lecture. Touche un dos pour le sortir du rayon.</p>
+    ${rayons}
+    <p class="doux petit legende-etagere">Les livres sont rangés dans l'ordre de lecture de chaque cycle. Touche un dos pour le sortir du rayon.</p>
     <div class="liste">${carteEcrit(choisi, lecture, true)}</div>`;
   }
   return `
     <p class="intro">Les livres que tu écris avec Claude, à lire ou à écouter comme de vrais livres.</p>
     ${bascule}
-    <div class="liste">${liste.map(e => carteEcrit(e, lecture)).join("")}</div>`;
+    ${parCycles(liste).map((c, _, tous) => `${enteteCycle(c, tous.length < 2)}<div class="liste">${c.livres.map(e => carteEcrit(e, lecture)).join("")}</div>`).join("")}`;
 }
 
 function carteEcrit(e, lecture, toujoursOuvert) {
