@@ -144,6 +144,18 @@ function demanderConflit(distant) {
   });
 }
 
+// Les écrits sont mis à jour par Claude (synchro de nuit), jamais depuis l'appli :
+// avant d'envoyer, on garde donc la version la plus avancée de chacun, sans écraser les chapitres.
+function fusionnerEcrits(distants) {
+  const loc = new Map((Array.isArray(etat.ecrits) ? etat.ecrits : []).map(e => [e.id, e]));
+  const dis = Array.isArray(distants) ? distants : [];
+  const avance = e => [Number(e.docRev) || 0, (e.chapitres || []).length];
+  const meilleur = (a, b) => { const x = avance(a), y = avance(b); return (y[0] > x[0] || (y[0] === x[0] && y[1] > x[1])) ? b : a; };
+  const res = dis.map(d => (loc.has(d.id) ? meilleur(d, loc.get(d.id)) : d));
+  loc.forEach((e, id) => { if (!dis.some(d => d.id === id)) res.push(e); });
+  return res;
+}
+
 function recevoirDonnees(donnees) {
   if (!etatEstVierge()) ecrireJSON(CLE_AVANT_SYNCHRO, etat);
   adopterEtat(donnees);
@@ -177,6 +189,7 @@ async function cycleSynchro() {
   }
   if (action === "envoyer") {
     if (!etat.modifieLe) { etat.modifieLe = new Date().toISOString(); ecrireJSON(CLE_STOCKAGE, etat); }
+    if (donneesDistantes && Array.isArray(donneesDistantes.ecrits)) { etat.ecrits = fusionnerEcrits(donneesDistantes.ecrits); ecrireJSON(CLE_STOCKAGE, etat); }
     const version = etat.modifieLe;
     await ecrireFichier(FICHIER_DONNEES, texteVersBase64(JSON.stringify(etat, null, 1)), messageCommit(donneesDistantes, etat), distant ? distant.sha : null);
     ecrireSynchro({ ...lireSynchro(), versionSynchro: version });
