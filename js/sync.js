@@ -163,6 +163,7 @@ function recevoirDonnees(donnees) {
 }
 
 async function cycleSynchro() {
+  await ecritsCharges;
   const s = lireSynchro();
   const distant = await lireFichier(FICHIER_DONNEES);
   const donneesDistantes = distant ? JSON.parse(distant.texte) : null;
@@ -348,6 +349,7 @@ function brancherSynchro(zone) {
   if (avant) avant.addEventListener("click", () => {
     const ancien = lireJSON(CLE_AVANT_SYNCHRO);
     if (!ancien) return;
+    if (!Array.isArray(ancien.ecrits)) ancien.ecrits = etat.ecrits;
     adopterEtat(ancien);
     etat.modifieLe = new Date().toISOString();
     ecrireJSON(CLE_STOCKAGE, etat);
@@ -361,7 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const b = document.getElementById("btn-synchro");
   if (b) b.addEventListener("click", () => synchroniser({ manuel: true }));
   majBoutonSynchro();
-  if (synchroActive()) setTimeout(() => synchroniser(), 600);
+  if (synchroActive()) ecritsCharges.then(() => setTimeout(() => synchroniser(), 300));
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible" && synchroActive() && Date.now() - syncEtat.dernierEssai > 60000) synchroniser();
   });

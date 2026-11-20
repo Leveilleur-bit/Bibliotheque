@@ -1,7 +1,7 @@
 {
-  "version": "66",
+  "version": "67",
   "date": "2026-11-20",
   "nouveautes": [
-    "Écrits : la synchro garde la version la plus récente d'un livre quand son manuscrit change de document"
+    "Écrits : les textes sont rangés dans la base de l'appareil, la mémoire du navigateur ne déborde plus"
   ]
 }

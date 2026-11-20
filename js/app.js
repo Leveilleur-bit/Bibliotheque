@@ -8,7 +8,7 @@
 
 const CLE_STOCKAGE = "maBibliotheque";
 const CLE_UI = "maBibliothequeUI";
-const VERSION_APPLI = "66";   // doit correspondre à version.json
+const VERSION_APPLI = "67";   // doit correspondre à version.json
 
 /* ---------- Outils ---------- */
 
@@ -21,7 +21,37 @@ const estLienAudibleFr = u => /^https:\/\/(www\.)?audible\.fr\//i.test(String(u 
 const pluriel = (n, mot) => n + " " + mot + (n > 1 ? "s" : "");
 
 function lireJSON(cle) { try { const v = localStorage.getItem(cle); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
-function ecrireJSON(cle, valeur) { try { localStorage.setItem(cle, JSON.stringify(valeur)); return true; } catch (e) { return false; } }
+/* Les textes des écrits sont trop lourds pour localStorage (environ 5 Mo) : ils vivent dans IndexedDB. */
+const CLES_LOURDES = ["maBibliotheque", "maBibliothequeAvantSynchro"];
+let promesseBase = null;
+function base() {
+  return promesseBase || (promesseBase = new Promise((ok, ko) => {
+    const r = indexedDB.open("maBibliotheque", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("kv");
+    r.onsuccess = () => ok(r.result);
+    r.onerror = () => ko(r.error);
+  }));
+}
+async function idbPoser(cle, v) {
+  const db = await base();
+  return new Promise((ok, ko) => { const t = db.transaction("kv", "readwrite"); t.objectStore("kv").put(v, cle); t.oncomplete = () => ok(true); t.onerror = () => ko(t.error); });
+}
+async function idbLire(cle) {
+  const db = await base();
+  return new Promise((ok, ko) => { const r = db.transaction("kv").objectStore("kv").get(cle); r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); });
+}
+function ecrireJSON(cle, valeur) {
+  try {
+    if (CLES_LOURDES.includes(cle) && valeur && typeof valeur === "object") {
+      const { ecrits, ...leger } = valeur;
+      if (cle === CLES_LOURDES[0] && Array.isArray(ecrits)) idbPoser("ecrits", ecrits).catch(() => toast("Impossible d'enregistrer les écrits sur cet appareil."));
+      localStorage.setItem(cle, JSON.stringify(leger));
+      return true;
+    }
+    localStorage.setItem(cle, JSON.stringify(valeur));
+    return true;
+  } catch (e) { return false; }
+}
 
 function idDepuisTitre(titre, prefixe) {
   const base = String(titre).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
@@ -53,6 +83,12 @@ function normaliser(d) {
 }
 
 let etat = normaliser(lireJSON(CLE_STOCKAGE));
+// Les écrits arrivent d'IndexedDB juste après le démarrage ; la synchro les attend.
+const ecritsCharges = idbLire("ecrits").then(e => {
+  if (Array.isArray(e)) etat.ecrits = e;
+  else if (Array.isArray(etat.ecrits)) ecrireJSON(CLE_STOCKAGE, etat); // première fois : on déplace les écrits hors de localStorage
+  if (typeof rendre === "function" && document.readyState !== "loading") rendre();
+}).catch(() => {});
 const ui = Object.assign({ vue: "audible", filtreAudible: "a_ecouter", filtreGenre: "tout", triGenre: "auteur", ongletIdees: "fantasy", affichageGenre: "liste", affichageEcrits: "etagere", ecritChoisi: "", recherche: "" }, lireJSON(CLE_UI) || {});
 const ouverts = new Set();
 let suppressionEnAttente = null;
