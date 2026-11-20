@@ -150,7 +150,8 @@ function fusionnerEcrits(distants) {
   const loc = new Map((Array.isArray(etat.ecrits) ? etat.ecrits : []).map(e => [e.id, e]));
   const dis = Array.isArray(distants) ? distants : [];
   const avance = e => [Number(e.docRev) || 0, (e.chapitres || []).length];
-  const meilleur = (a, b) => { const x = avance(a), y = avance(b); return (y[0] > x[0] || (y[0] === x[0] && y[1] > x[1])) ? b : a; };
+  const date = e => Date.parse(e.maj || "") || 0;
+  const meilleur = (a, b) => { if ((a.lienDoc || "") !== (b.lienDoc || "") && date(a) !== date(b)) return date(b) > date(a) ? b : a; const x = avance(a), y = avance(b); return (y[0] > x[0] || (y[0] === x[0] && y[1] > x[1])) ? b : a; };
   const res = dis.map(d => (loc.has(d.id) ? meilleur(d, loc.get(d.id)) : d));
   loc.forEach((e, id) => { if (!dis.some(d => d.id === id)) res.push(e); });
   return res;
